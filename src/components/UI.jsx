@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
-import { ChevronDown, X, SlidersHorizontal, Zap, AlertTriangle, RefreshCw } from 'lucide-react'
+import { ChevronDown, X, SlidersHorizontal, Zap, AlertTriangle, RefreshCw, Calendar } from 'lucide-react'
 import { useData } from '../context/DataContext'
-import { fmtDate } from '../lib/metrics'
 
 // ── KPI Card ──────────────────────────────────────────────────────────────────
 const ACCENT = {
@@ -65,7 +64,7 @@ export function PageHeader({ title, subtitle }) {
   return (
     <div style={{
       position: 'sticky', top: 0, zIndex: 30,
-      background: 'rgba(8,11,24,.85)', backdropFilter: 'blur(12px)',
+      background: 'rgba(8,11,24,.9)', backdropFilter: 'blur(12px)',
       borderBottom: '1px solid #1C2340', padding: '16px 24px',
     }}>
       <div style={{ marginBottom: 12 }}>
@@ -77,8 +76,8 @@ export function PageHeader({ title, subtitle }) {
   )
 }
 
-// ── Filter Bar ────────────────────────────────────────────────────────────────
-function MultiSelect({ label, options, selected, onChange, fmt }) {
+// ── Multi Select ──────────────────────────────────────────────────────────────
+function MultiSelect({ label, options, selected, onChange }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -99,8 +98,7 @@ function MultiSelect({ label, options, selected, onChange, fmt }) {
           borderRadius: 8, border: selected.length > 0 ? '1px solid rgba(245,158,11,.4)' : '1px solid #1C2340',
           background: selected.length > 0 ? 'rgba(245,158,11,.1)' : '#131829',
           color: selected.length > 0 ? '#F59E0B' : '#94A3B8',
-          fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
-          transition: 'all .15s',
+          fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
         }}
       >
         {label}
@@ -134,13 +132,14 @@ function MultiSelect({ label, options, selected, onChange, fmt }) {
               }}
             >
               <div style={{
-                width: 14, height: 14, borderRadius: 3, border: selected.includes(opt) ? '1px solid #F59E0B' : '1px solid #475569',
+                width: 14, height: 14, borderRadius: 3,
+                border: selected.includes(opt) ? '1px solid #F59E0B' : '1px solid #475569',
                 background: selected.includes(opt) ? '#F59E0B' : 'transparent',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}>
                 {selected.includes(opt) && <span style={{ fontSize: 8, color: '#080B18', fontWeight: 700 }}>✓</span>}
               </div>
-              {fmt ? fmt(opt) : opt}
+              {opt}
             </button>
           ))}
           {options.length === 0 && <p style={{ fontSize: 11, color: '#94A3B8', padding: '8px 12px' }}>Sem opções</p>}
@@ -150,15 +149,159 @@ function MultiSelect({ label, options, selected, onChange, fmt }) {
   )
 }
 
-function FilterBar() {
+// ── Date Range Picker ─────────────────────────────────────────────────────────
+function DateRangePicker({ dateFrom, dateTo, onChange }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [])
+
+  const hasValue = dateFrom || dateTo
+
+  const fmtDisplay = (iso) => {
+    if (!iso) return ''
+    const [y, m, d] = iso.split('-')
+    return `${d}/${m}/${y}`
+  }
+
+  const label = hasValue
+    ? `${fmtDisplay(dateFrom) || '∞'} → ${fmtDisplay(dateTo) || '∞'}`
+    : 'Período'
+
+  // Quick selects
+  const quickSelect = (months) => {
+    const now = new Date()
+    const from = new Date(now)
+    from.setMonth(from.getMonth() - months + 1)
+    from.setDate(1)
+    const toIso  = now.toISOString().slice(0, 10)
+    const fromIso = from.toISOString().slice(0, 10)
+    onChange(fromIso, toIso)
+    setOpen(false)
+  }
+
+  const quickYear = () => {
+    const now = new Date()
+    const from = `${now.getFullYear()}-01-01`
+    const to   = now.toISOString().slice(0, 10)
+    onChange(from, to)
+    setOpen(false)
+  }
+
+  const inputStyle = {
+    background: '#080B18', border: '1px solid #1C2340', borderRadius: 8,
+    color: '#fff', padding: '6px 10px', fontSize: 12, fontFamily: 'inherit',
+    outline: 'none', width: '100%', colorScheme: 'dark',
+  }
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px',
+          borderRadius: 8, border: hasValue ? '1px solid rgba(245,158,11,.4)' : '1px solid #1C2340',
+          background: hasValue ? 'rgba(245,158,11,.1)' : '#131829',
+          color: hasValue ? '#F59E0B' : '#94A3B8',
+          fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <Calendar size={11} />
+        {label}
+        <ChevronDown size={11} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }} />
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 50,
+          background: '#0E1225', border: '1px solid #1C2340', borderRadius: 14,
+          boxShadow: '0 8px 32px rgba(0,0,0,.6)', padding: 16, minWidth: 280,
+        }}>
+          {/* Quick selects */}
+          <p style={{ fontSize: 10, color: '#475569', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Atalhos</p>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
+            {[
+              { label: 'Último mês',     fn: () => quickSelect(1)  },
+              { label: 'Últimos 3m',     fn: () => quickSelect(3)  },
+              { label: 'Últimos 6m',     fn: () => quickSelect(6)  },
+              { label: 'Último ano',     fn: () => quickSelect(12) },
+              { label: 'Este ano',       fn: quickYear              },
+            ].map(q => (
+              <button
+                key={q.label}
+                onClick={q.fn}
+                style={{
+                  padding: '5px 10px', borderRadius: 7, border: '1px solid #1C2340',
+                  background: '#131829', color: '#94A3B8', fontSize: 10, cursor: 'pointer',
+                  fontFamily: 'inherit', transition: 'all .1s',
+                }}
+                onMouseEnter={e => { e.target.style.color = '#fff'; e.target.style.borderColor = 'rgba(245,158,11,.3)' }}
+                onMouseLeave={e => { e.target.style.color = '#94A3B8'; e.target.style.borderColor = '#1C2340' }}
+              >
+                {q.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Manual inputs */}
+          <p style={{ fontSize: 10, color: '#475569', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Personalizado</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div>
+              <p style={{ fontSize: 10, color: '#94A3B8', marginBottom: 4 }}>De</p>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={e => onChange(e.target.value, dateTo)}
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <p style={{ fontSize: 10, color: '#94A3B8', marginBottom: 4 }}>Até</p>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={e => onChange(dateFrom, e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
+          {(dateFrom || dateTo) && (
+            <button
+              onClick={() => { onChange('', ''); setOpen(false) }}
+              style={{
+                marginTop: 12, width: '100%', padding: '7px', borderRadius: 8,
+                border: '1px solid rgba(244,63,94,.3)', background: 'transparent',
+                color: '#F43F5E', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              }}
+            >
+              <X size={10} /> Limpar período
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Filter Bar ────────────────────────────────────────────────────────────────
+export function FilterBar() {
   const { data, filters, setFilter, clearFilters } = useData()
   if (!data) return null
-  const ex = data.execucoes
+
+  const ex     = data.execucoes
   const tipos  = [...new Set(ex.map(e => e.tipoExecucao))].filter(Boolean).sort()
   const status = [...new Set(ex.map(e => e.statusPagamento))].filter(Boolean).sort()
-  const jEnv   = [...new Set(ex.map(e => e.janelaEnvio).filter(Boolean))].sort()
-  const jPag   = [...new Set(ex.map(e => e.janelaPagamento).filter(Boolean))].sort()
-  const hasActive = Object.values(filters).some(v => v.length > 0)
+
+  const hasActive = filters.tipoExecucao.length > 0 ||
+                    filters.statusPagamento.length > 0 ||
+                    filters.dateFrom || filters.dateTo
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -166,10 +309,25 @@ function FilterBar() {
         <SlidersHorizontal size={11} />
         <span>Filtros</span>
       </div>
-      <MultiSelect label="Tipo"            options={tipos}  selected={filters.tipoExecucao}    onChange={v => setFilter('tipoExecucao',   v)} />
-      <MultiSelect label="Status"          options={status} selected={filters.statusPagamento} onChange={v => setFilter('statusPagamento',v)} />
-      <MultiSelect label="Janela Envio"    options={jEnv}   selected={filters.janelaEnvio}     onChange={v => setFilter('janelaEnvio',    v)} fmt={fmtDate} />
-      <MultiSelect label="Janela Pgto"     options={jPag}   selected={filters.janelaPagamento} onChange={v => setFilter('janelaPagamento',v)} fmt={fmtDate} />
+
+      <MultiSelect
+        label="Tipo"
+        options={tipos}
+        selected={filters.tipoExecucao}
+        onChange={v => setFilter('tipoExecucao', v)}
+      />
+      <MultiSelect
+        label="Status"
+        options={status}
+        selected={filters.statusPagamento}
+        onChange={v => setFilter('statusPagamento', v)}
+      />
+      <DateRangePicker
+        dateFrom={filters.dateFrom}
+        dateTo={filters.dateTo}
+        onChange={(from, to) => { setFilter('dateFrom', from); setFilter('dateTo', to) }}
+      />
+
       {hasActive && (
         <button
           onClick={clearFilters}
@@ -228,25 +386,28 @@ export function ErrorState({ message, onRetry }) {
 }
 
 // ── SLA Farol ─────────────────────────────────────────────────────────────────
-export function SLAFarol({ label, value, thresholds = [7, 15] }) {
+export function SLAFarol({ label, value, thresholds = [7, 15], count }) {
   const status = value === null ? 'none' : value <= thresholds[0] ? 'ok' : value <= thresholds[1] ? 'warn' : 'crit'
   const S = {
-    none: { dot: '#475569', text: '#94A3B8', badge: '#1C2340', bdg: '#475569', lbl: '—'      },
-    ok:   { dot: '#10B981', text: '#10B981', badge: 'rgba(16,185,129,.1)',  bdg: 'rgba(16,185,129,.3)', lbl: 'Ótimo'   },
-    warn: { dot: '#F59E0B', text: '#F59E0B', badge: 'rgba(245,158,11,.1)',  bdg: 'rgba(245,158,11,.3)', lbl: 'Alerta'  },
-    crit: { dot: '#F43F5E', text: '#F43F5E', badge: 'rgba(244,63,94,.1)',   bdg: 'rgba(244,63,94,.3)',  lbl: 'Crítico' },
+    none: { dot: '#475569', text: '#94A3B8', badge: '#1C2340',               bdg: '#475569',               lbl: '—'       },
+    ok:   { dot: '#10B981', text: '#10B981', badge: 'rgba(16,185,129,.1)',   bdg: 'rgba(16,185,129,.3)',   lbl: 'Ótimo'   },
+    warn: { dot: '#F59E0B', text: '#F59E0B', badge: 'rgba(245,158,11,.1)',   bdg: 'rgba(245,158,11,.3)',   lbl: 'Alerta'  },
+    crit: { dot: '#F43F5E', text: '#F43F5E', badge: 'rgba(244,63,94,.1)',    bdg: 'rgba(244,63,94,.3)',    lbl: 'Crítico' },
   }[status]
 
   return (
-    <div style={{ background: '#131829', border: '1px solid #1C2340', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
+    <div style={{ background: '#131829', border: '1px solid #1C2340', borderRadius: 12, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
       <div style={{ width: 10, height: 10, borderRadius: '50%', background: S.dot, flexShrink: 0, boxShadow: status !== 'none' ? `0 0 8px ${S.dot}` : 'none' }} />
       <div style={{ flex: 1 }}>
         <p style={{ fontSize: 11, color: '#94A3B8' }}>{label}</p>
-        <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, color: S.text, lineHeight: 1.2, marginTop: 2 }}>
+        <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, color: S.text, lineHeight: 1.2, marginTop: 3 }}>
           {value !== null ? `${value} dias` : '—'}
         </p>
+        {count !== undefined && count > 0 && (
+          <p style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>{count} registros com dados</p>
+        )}
       </div>
-      <span style={{ fontSize: 10, fontWeight: 500, padding: '3px 8px', borderRadius: 20, background: S.badge, border: `1px solid ${S.bdg}`, color: S.text }}>
+      <span style={{ fontSize: 10, fontWeight: 500, padding: '3px 8px', borderRadius: 20, background: S.badge, border: `1px solid ${S.bdg}`, color: S.text, whiteSpace: 'nowrap' }}>
         {S.lbl}
       </span>
     </div>
@@ -260,7 +421,7 @@ export function CustomTooltip({ active, payload, label, currency = true }) {
     <div style={{ background: '#0E1225', border: '1px solid #1C2340', borderRadius: 10, padding: '10px 14px', fontSize: 11, minWidth: 150, boxShadow: '0 8px 24px rgba(0,0,0,.4)' }}>
       {label && <p style={{ color: '#94A3B8', marginBottom: 8, fontWeight: 500 }}>{label}</p>}
       {payload.map((p, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginTop: i > 0 ? 4 : 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.color ?? '#6366F1' }} />
             <span style={{ color: '#94A3B8' }}>{p.name}</span>
