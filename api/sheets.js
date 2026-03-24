@@ -136,7 +136,7 @@ function normalizeConstrucao(row, idx) {
   if (!id || !status) return null
   return {
     _id: `CONSTRUCAO-METRO-${idx}`, idExecucao: id, sgm: lcl, ot,
-    tipoExecucao: 'CONSTRUÇÃO - Metro',
+    tipoExecucao: 'CONSTRUÇÃO',
     regional: row[1] || '', municipio: row[6] || '', sistema: row[4] || '',
     workflowStatus: row[9] || '',
     dataEnergizacao: parseDate(row[5]),
