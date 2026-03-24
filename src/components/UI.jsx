@@ -11,24 +11,36 @@ const ACCENT = {
   muted:   { border: '#1C2340',             icon: '#131829',              iconC: '#94A3B8', shadow: 'transparent'          },
 }
 
-export function KPICard({ label, value, sub, icon, accent = 'muted', trend }) {
+export function KPICard({ label, value, sub, icon, accent = 'muted', trend, compact = false }) {
   const a = ACCENT[accent] ?? ACCENT.muted
   return (
     <div style={{
       background: '#0E1225', borderRadius: 12, border: `1px solid ${a.border}`,
-      padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12,
+      padding: compact ? '12px 14px' : '18px 20px',
+      display: 'flex', flexDirection: 'column', gap: compact ? 8 : 12,
       boxShadow: `0 0 20px ${a.shadow}`,
     }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <p style={{ fontSize: 10, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 500 }}>{label}</p>
+        {/* [FIX] label não quebra linha no modo compact */}
+        <p style={{
+          fontSize: 10, color: '#94A3B8', textTransform: 'uppercase',
+          letterSpacing: '0.1em', fontWeight: 500,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>{label}</p>
         {icon && (
-          <div style={{ width: 30, height: 30, borderRadius: 8, background: a.icon, display: 'flex', alignItems: 'center', justifyContent: 'center', color: a.iconC }}>
+          <div style={{ width: 30, height: 30, borderRadius: 8, background: a.icon, display: 'flex', alignItems: 'center', justifyContent: 'center', color: a.iconC, flexShrink: 0 }}>
             {icon}
           </div>
         )}
       </div>
       <div>
-        <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, color: '#fff', lineHeight: 1 }}>{value}</p>
+        {/* [FIX] fonte 14px no modo compact + truncamento com ellipsis */}
+        <p style={{
+          fontFamily: "'Syne', sans-serif",
+          fontSize: compact ? 14 : 22,
+          fontWeight: 700, color: '#fff', lineHeight: 1,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>{value}</p>
         {sub && <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 6 }}>{sub}</p>}
       </div>
       {trend && (
@@ -172,7 +184,6 @@ function DateRangePicker({ dateFrom, dateTo, onChange }) {
     ? `${fmtDisplay(dateFrom) || '∞'} → ${fmtDisplay(dateTo) || '∞'}`
     : 'Período'
 
-  // Quick selects
   const quickSelect = (months) => {
     const now = new Date()
     const from = new Date(now)
@@ -222,15 +233,14 @@ function DateRangePicker({ dateFrom, dateTo, onChange }) {
           background: '#0E1225', border: '1px solid #1C2340', borderRadius: 14,
           boxShadow: '0 8px 32px rgba(0,0,0,.6)', padding: 16, minWidth: 280,
         }}>
-          {/* Quick selects */}
           <p style={{ fontSize: 10, color: '#475569', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Atalhos</p>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
             {[
-              { label: 'Último mês',     fn: () => quickSelect(1)  },
-              { label: 'Últimos 3m',     fn: () => quickSelect(3)  },
-              { label: 'Últimos 6m',     fn: () => quickSelect(6)  },
-              { label: 'Último ano',     fn: () => quickSelect(12) },
-              { label: 'Este ano',       fn: quickYear              },
+              { label: 'Último mês',  fn: () => quickSelect(1)  },
+              { label: 'Últimos 3m',  fn: () => quickSelect(3)  },
+              { label: 'Últimos 6m',  fn: () => quickSelect(6)  },
+              { label: 'Último ano',  fn: () => quickSelect(12) },
+              { label: 'Este ano',    fn: quickYear              },
             ].map(q => (
               <button
                 key={q.label}
@@ -248,26 +258,15 @@ function DateRangePicker({ dateFrom, dateTo, onChange }) {
             ))}
           </div>
 
-          {/* Manual inputs */}
           <p style={{ fontSize: 10, color: '#475569', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Personalizado</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
               <p style={{ fontSize: 10, color: '#94A3B8', marginBottom: 4 }}>De</p>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={e => onChange(e.target.value, dateTo)}
-                style={inputStyle}
-              />
+              <input type="date" value={dateFrom} onChange={e => onChange(e.target.value, dateTo)} style={inputStyle} />
             </div>
             <div>
               <p style={{ fontSize: 10, color: '#94A3B8', marginBottom: 4 }}>Até</p>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={e => onChange(dateFrom, e.target.value)}
-                style={inputStyle}
-              />
+              <input type="date" value={dateTo} onChange={e => onChange(dateFrom, e.target.value)} style={inputStyle} />
             </div>
           </div>
 
@@ -428,7 +427,7 @@ export function CustomTooltip({ active, payload, label, currency = true }) {
           </div>
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600, color: '#fff' }}>
             {currency
-              ? (p.value ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+              ? (p.value ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 })
               : (p.value ?? 0).toLocaleString('pt-BR')}
           </span>
         </div>
