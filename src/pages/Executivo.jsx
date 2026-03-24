@@ -89,18 +89,18 @@ export default function Executivo() {
       <PageHeader title="Dashboard Executivo" subtitle="Visão consolidada de todas as execuções" />
       <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-        {/* KPIs */}
-        <div style={{ ...G, gridTemplateColumns: 'repeat(6, 1fr)' }}>
-          <KPICard label="Total Orçado"   value={fmtBRL(totalOrcado)}      icon={<Target     size={14}/>} accent="muted"   />
-          <KPICard label="Total Apontado" value={fmtBRL(totalApontado)}    icon={<Zap        size={14}/>} accent="indigo"  />
-          <KPICard label="Total Pago"     value={fmtBRL(totalPago)}        icon={<DollarSign size={14}/>} accent="emerald" />
-          <KPICard label="Qtd. Obras"     value={qtdObras.toLocaleString()} icon={<Layers    size={14}/>} accent="amber"   />
-          <KPICard label="Municípios"     value={qtdMunis.toString()}       icon={<MapPin    size={14}/>} accent="muted"   />
-          <KPICard
+        {/* KPIs — gap:10 + minmax(0,1fr) evitam overflow lateral; prop compact reduz padding/fonte */}
+        <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(6, minmax(0, 1fr))' }}>
+          <KPICard compact label="Total Orçado"   value={fmtBRL(totalOrcado)}       icon={<Target     size={13}/>} accent="muted"   />
+          <KPICard compact label="Total Apontado" value={fmtBRL(totalApontado)}     icon={<Zap        size={13}/>} accent="indigo"  />
+          <KPICard compact label="Total Pago"     value={fmtBRL(totalPago)}         icon={<DollarSign size={13}/>} accent="emerald" />
+          <KPICard compact label="Qtd. Obras"     value={qtdObras.toLocaleString()} icon={<Layers     size={13}/>} accent="amber"   />
+          <KPICard compact label="Municípios"     value={qtdMunis.toString()}        icon={<MapPin     size={13}/>} accent="muted"   />
+          <KPICard compact
             label="% Ating. Meta"
             value={pctMeta !== null ? `${pctMeta.toFixed(1)}%` : '—'}
             sub={metaAtual ? `Meta: ${fmtBRL(metaAtual.metaTotal)}` : undefined}
-            icon={<Hash size={14}/>}
+            icon={<Hash size={13}/>}
             accent={metaColor}
           />
         </div>
