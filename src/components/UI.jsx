@@ -300,15 +300,27 @@ export function FilterBar() {
 
   const hasActive = filters.tipoExecucao.length > 0 ||
                     filters.statusPagamento.length > 0 ||
-                    filters.dateFrom || filters.dateTo
+                    filters.dateFrom || filters.dateTo ||
+                    filters.payFrom  || filters.payTo
+
+  const divider = (
+    <div style={{ width: 1, height: 24, background: '#1C2340', flexShrink: 0 }} />
+  )
+
+  const groupLabel = (txt) => (
+    <span style={{ fontSize: 10, color: '#475569', textTransform: 'uppercase', letterSpacing: '.07em', whiteSpace: 'nowrap' }}>
+      {txt}
+    </span>
+  )
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+
+      {/* ── Tipo / Status ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#475569', fontSize: 11 }}>
         <SlidersHorizontal size={11} />
         <span>Filtros</span>
       </div>
-
       <MultiSelect
         label="Tipo"
         options={tipos}
@@ -321,11 +333,30 @@ export function FilterBar() {
         selected={filters.statusPagamento}
         onChange={v => setFilter('statusPagamento', v)}
       />
-      <DateRangePicker
-        dateFrom={filters.dateFrom}
-        dateTo={filters.dateTo}
-        onChange={(from, to) => { setFilter('dateFrom', from); setFilter('dateTo', to) }}
-      />
+
+      {divider}
+
+      {/* ── Janela de Envio ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {groupLabel('Janela de envio')}
+        <DateRangePicker
+          dateFrom={filters.dateFrom}
+          dateTo={filters.dateTo}
+          onChange={(from, to) => { setFilter('dateFrom', from); setFilter('dateTo', to) }}
+        />
+      </div>
+
+      {divider}
+
+      {/* ── Janela de Pagamento ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {groupLabel('Janela de pagamento')}
+        <DateRangePicker
+          dateFrom={filters.payFrom}
+          dateTo={filters.payTo}
+          onChange={(from, to) => { setFilter('payFrom', from); setFilter('payTo', to) }}
+        />
+      </div>
 
       {hasActive && (
         <button
