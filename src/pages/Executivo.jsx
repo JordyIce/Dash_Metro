@@ -24,14 +24,45 @@ function BarLabel({ x, y, width, value, currency = true }) {
   )
 }
 
-// Rótulo customizado para barras horizontais
+// Rótulo customizado para barras horizontais — valor por extenso com 2 casas decimais
 function HBarLabel({ x, y, width, height, value }) {
   if (!value || value === 0) return null
-  const label = value >= 1e6 ? `${(value/1e6).toFixed(1)}M` : `${(value/1e3).toFixed(0)}k`
+  const label = value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 })
   return (
-    <text x={x + width + 5} y={y + height / 2 + 4} fill="#94A3B8" fontSize={10} fontFamily="'IBM Plex Mono', monospace">
+    <text x={x + width + 6} y={y + height / 2 + 4} fill="#94A3B8" fontSize={10} fontFamily="'IBM Plex Mono', monospace">
       {label}
     </text>
+  )
+}
+
+// Fix 2: Tooltip customizado para municípios — mostra valor + qtd de obras
+function MunicipioTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  const d = payload[0]
+  return (
+    <div style={{ background: '#0E1225', border: '1px solid #1C2340', borderRadius: 10, padding: '10px 14px', fontSize: 11, minWidth: 200, boxShadow: '0 8px 24px rgba(0,0,0,.4)' }}>
+      {label && <p style={{ color: '#94A3B8', marginBottom: 8, fontWeight: 500 }}>{label}</p>}
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: d.color ?? '#F59E0B' }} />
+          <span style={{ color: '#94A3B8' }}>Valor pago</span>
+        </div>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600, color: '#fff' }}>
+          {(d.value ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </span>
+      </div>
+      {d.payload?.qtd != null && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginTop: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'transparent' }} />
+            <span style={{ color: '#94A3B8' }}>Qtd. obras</span>
+          </div>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600, color: '#fff' }}>
+            {d.payload.qtd}
+          </span>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -157,10 +188,10 @@ export default function Executivo() {
 
           <ChartCard title="Top Municípios" subtitle="Por valor pago">
             <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={topMuni} layout="vertical" margin={{top:0,right:60,left:0,bottom:0}}>
+              <BarChart data={topMuni} layout="vertical" margin={{top:0,right:180,left:0,bottom:0}}>
                 <XAxis type="number" tickFormatter={v=>`${(v/1e3).toFixed(0)}k`} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
-                <YAxis type="category" dataKey="municipio" width={160} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v => v.length > 20 ? v.slice(0,18)+"…" : v}/>
-                <Tooltip content={<CustomTooltip/>}/>
+                <YAxis type="category" dataKey="municipio" width={200} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
+                <Tooltip content={<MunicipioTooltip/>}/>
                 <Bar dataKey="valor" name="Valor Pago" radius={[0,4,4,0]}>
                   <LabelList content={<HBarLabel/>} />
                   {topMuni.map((_,i) => <Cell key={i} fill={CHART_PALETTE[i%CHART_PALETTE.length]}/>)}
