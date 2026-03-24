@@ -157,9 +157,9 @@ export default function Executivo() {
 
           <ChartCard title="Top Municípios" subtitle="Por valor pago">
             <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={topMuni} layout="vertical" margin={{top:0,right:70,left:0,bottom:0}}>
+              <BarChart data={topMuni} layout="vertical" margin={{top:0,right:60,left:0,bottom:0}}>
                 <XAxis type="number" tickFormatter={v=>`${(v/1e3).toFixed(0)}k`} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
-                <YAxis type="category" dataKey="municipio" width={100} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
+                <YAxis type="category" dataKey="municipio" width={160} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v => v.length > 20 ? v.slice(0,18)+"…" : v}/>
                 <Tooltip content={<CustomTooltip/>}/>
                 <Bar dataKey="valor" name="Valor Pago" radius={[0,4,4,0]}>
                   <LabelList content={<HBarLabel/>} />
