@@ -130,10 +130,14 @@ function normalizeLinhaViva(row, idx) {
 // [18]VL_ORCADO [19]VL_APONTADO [20]DATA_UV [21]JANELA_ENVIO [22]VL_PAGO
 // [24]JANELA_PAG [25]QTD_POSTE [26]QTD_KLC [36]STATUS (deslocado +1)
 function normalizeConstrucao(row, idx) {
-  if (row.length < 37) return null
-  const lcl = row[2], ot = row[3], id = lcl || ot
-  const status = row[36]
-  if (!id || !status) return null
+  // Aceita linhas com pelo menos 23 colunas (até VALOR PAGO)
+  if (row.length < 23) return null
+  const lcl = row[2], ot = row[3]
+  // Usa OT ou LCL como ID; se ambos vazios, gera ID pelo índice para não perder o registro
+  const id = lcl || ot || `CONSTR-${idx}`
+  // STATUS pode estar em [36] (38 cols) ou [35] (37 cols) — pega o que tiver
+  const status = (row.length >= 37 ? row[36] : null) || (row.length >= 36 ? row[35] : null) || ''
+  if (!status) return null
   return {
     _id: `CONSTRUCAO-METRO-${idx}`, idExecucao: id, sgm: lcl, ot,
     tipoExecucao: 'CONSTRUÇÃO',
