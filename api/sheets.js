@@ -1,16 +1,5 @@
 const SHEET_ID = '1HfQ2zj0De6gtFS39z-VR8ZCgRjcK5umusRnG_aYbh_4'
 
-// GIDs de cada aba
-const ABAS = [
-  { nome: 'PARCIAL',               gid: '1226112246', tipo: 'parcial'    },
-  { nome: 'MANUTENÇÃO PREVENTIVA', gid: '522996516',  tipo: 'manutencao' },
-  { nome: 'MANUTENÇÃO PESADA',     gid: '189511042',  tipo: 'manutencao' },
-  { nome: 'MANUTENÇÃO LINHA VIVA', gid: '444956809',  tipo: 'manutencao' },
-  { nome: 'MEDIÇÃO GRÁFICA',       gid: '889068289',  tipo: 'manutencao' },
-  { nome: 'CONSTRUÇÃO - Metro',    gid: '584650671',  tipo: 'construcao'  },
-]
-const GID_META = '137800100'
-
 // ── CSV parser ────────────────────────────────────────────────────────────────
 function parseCSVLine(line) {
   const result = []; let cur = ''; let inQ = false
@@ -25,15 +14,11 @@ function parseCSVLine(line) {
 }
 
 function parseCSVRaw(text) {
-  return text
-    .split('\n')
-    .map(l => l.replace(/\r$/, ''))
-    .filter(l => l.trim())
-    .map(parseCSVLine)
-    .map(row => row.map(v => v.trim()))
+  return text.split('\n').map(l => l.replace(/\r$/, '')).filter(l => l.trim())
+    .map(parseCSVLine).map(row => row.map(v => v.trim()))
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Value helpers ─────────────────────────────────────────────────────────────
 function parseBRL(s) {
   if (!s || s === '-') return 0
   let v = s.replace(/R\$\s*/gi, '').replace(/['"]/g, '').trim()
@@ -42,13 +27,11 @@ function parseBRL(s) {
   const n = parseFloat(v)
   return isNaN(n) ? 0 : n
 }
-
 function parseNum(s) {
   if (!s) return 0
   const n = parseFloat(s.replace(',', '.'))
   return isNaN(n) ? 0 : n
 }
-
 function parseDate(s) {
   if (!s || s === '-') return null
   const m = s.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
@@ -57,10 +40,11 @@ function parseDate(s) {
 }
 
 // ── Normalizers (posicionais) ─────────────────────────────────────────────────
-// PARCIAL: [0]TIPO [1]REGIONAL [2]LCL/OS [3]OT [4]SISTEMA [5]MUNICÍPIO
-// [6]ESTADO [7]TAREFA [8]CERT [9]CONTRATO [10]RESP [11]DATA_ENVIO
-// [12]VL_APONTADO [13]DATA_VALIDACAO [14]JANELA_ENVIO [15]VL_PAGO
-// [16]NUM_CONFORM [17]JANELA_PAG [18]OBS [19]STATUS
+
+// PARCIAL (20 colunas):
+// [0]TIPO [1]REGIONAL [2]LCL/OS [3]OT [4]SISTEMA [5]MUNICÍPIO [6]ESTADO
+// [11]DATA_ENVIO [12]VL_APONTADO [13]DATA_VALIDACAO [14]JANELA_ENVIO
+// [15]VL_PAGO [17]JANELA_PAG [19]STATUS
 function normalizeParcial(row, idx) {
   if (row.length < 20) return null
   const sgm = row[2], ot = row[3], id = sgm || ot
@@ -83,12 +67,11 @@ function normalizeParcial(row, idx) {
   }
 }
 
-// MANUTENÇÃO (PREV/PESADA/MED.GRÁFICA): 39 cols
+// MANUTENÇÃO PREVENTIVA / PESADA / MEDIÇÃO GRÁFICA (39 colunas):
 // [0]TIPO [1]REGIONAL [2]SGM [3]OT [4]SISTEMA [5]DATA_ENERG [6]MUNICÍPIO
-// [7]SUPERVISOR [8]CHEFE [9]ESTADO [10..14]fisc/uf [15]DATA_APONTAMENTO
-// [16]DATA_LIQUIDACAO [17]DATA_UF [18]VL_ORCADO [19]VL_APONTADO [20]DATA_UV
-// [21]JANELA_ENVIO [22]VL_PAGO [23]NUM_CONFORM [24]JANELA_PAG
-// [25]QTD_POSTE [26]QTD_KLC [27..34]outros [35]STATUS
+// [9]ESTADO [15]DATA_APONTAMENTO [16]DATA_LIQUIDACAO [17]DATA_UF
+// [18]VL_ORCADO [19]VL_APONTADO [20]DATA_UV [21]JANELA_ENVIO [22]VL_PAGO
+// [24]JANELA_PAG [25]QTD_POSTE [26]QTD_KLC [35]STATUS
 function normalizeManutencao(row, fonte, idx) {
   if (row.length < 36) return null
   const sgm = row[2], ot = row[3], id = sgm || ot
@@ -114,14 +97,14 @@ function normalizeManutencao(row, fonte, idx) {
   }
 }
 
-// LINHA VIVA: igual manutencao mas [3] = N° INCIDÊNCIA
+// MANUTENÇÃO LINHA VIVA (39 colunas — [3] = N° INCIDÊNCIA):
 function normalizeLinhaViva(row, idx) {
   if (row.length < 36) return null
   const sgm = row[2], ot = row[3], id = sgm || ot
   const status = row[35]
   if (!id || !status) return null
   return {
-    _id: `MANUTENÇÃO LINHA VIVA-${idx}`, idExecucao: id, sgm, ot,
+    _id: `MANUTENCAO LINHA VIVA-${idx}`, idExecucao: id, sgm, ot,
     tipoExecucao: row[0] || 'MANUTENÇÃO LINHA VIVA',
     regional: row[1] || '', municipio: row[6] || '', sistema: row[4] || '',
     workflowStatus: row[9] || '',
@@ -141,7 +124,38 @@ function normalizeLinhaViva(row, idx) {
   }
 }
 
-// META: [0]JANELA [1]META_MANUT [2]META_CONST [3]META_TOTAL
+// CONSTRUÇÃO - Metro (38 colunas — tem DATA DE RETIRADA extra em [32]):
+// [0]TIPO [1]REGIONAL [2]LCL [3]OT [4]SISTEMA [5]DATA_ENERG [6]MUNICÍPIO
+// [9]ESTADO [15]DATA_APONTAMENTO [16]DATA_LIQUIDACAO [17]DATA_UF
+// [18]VL_ORCADO [19]VL_APONTADO [20]DATA_UV [21]JANELA_ENVIO [22]VL_PAGO
+// [24]JANELA_PAG [25]QTD_POSTE [26]QTD_KLC [36]STATUS (deslocado +1)
+function normalizeConstrucao(row, idx) {
+  if (row.length < 37) return null
+  const lcl = row[2], ot = row[3], id = lcl || ot
+  const status = row[36]
+  if (!id || !status) return null
+  return {
+    _id: `CONSTRUCAO-METRO-${idx}`, idExecucao: id, sgm: lcl, ot,
+    tipoExecucao: 'CONSTRUÇÃO - Metro',
+    regional: row[1] || '', municipio: row[6] || '', sistema: row[4] || '',
+    workflowStatus: row[9] || '',
+    dataEnergizacao: parseDate(row[5]),
+    dataApontamento: parseDate(row[15]),
+    dataUF:          parseDate(row[17]),
+    dataUV:          parseDate(row[20]),
+    dataLiquidacao:  parseDate(row[16]),
+    janelaEnvio:     parseDate(row[21]),
+    janelaPagamento: parseDate(row[24]),
+    valorOrcado:    parseBRL(row[18]),
+    valorApontado:  parseBRL(row[19]),
+    valorPago:      parseBRL(row[22]),
+    qtdPoste: parseNum(row[25]), qtdKLC: parseNum(row[26]),
+    statusPagamento: status,
+    fonte: 'CONSTRUÇÃO - Metro',
+  }
+}
+
+// META FATURAMENTO: [0]JANELA [1]META_MANUT [2]META_CONST [3]META_TOTAL
 function normalizeMeta(row) {
   if (row.length < 4) return null
   const janela = parseDate(row[0])
@@ -154,15 +168,11 @@ function normalizeMeta(row) {
   }
 }
 
-// ── Fetch — usa /export?format=csv&gid=X que IGNORA filtros ativos ────────────
+// ── Fetch — /export ignora filtros ativos da planilha ─────────────────────────
 async function fetchSheet(gid) {
-  // Esta URL exporta todas as linhas, independente de filtros na planilha
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`
   const r = await fetch(url, {
-    headers: {
-      'Accept': 'text/csv,text/plain,*/*',
-      'User-Agent': 'Mozilla/5.0',
-    },
+    headers: { 'Accept': 'text/csv,text/plain,*/*', 'User-Agent': 'Mozilla/5.0' },
     redirect: 'follow',
   })
   if (!r.ok) throw new Error(`HTTP ${r.status}`)
@@ -177,91 +187,62 @@ export default async function handler(req, res) {
 
   // ?debug=1
   if (req.query?.debug === '1') {
-    const all = [...ABAS, { nome: 'META FATURAMENTO', gid: GID_META }]
+    const abas = [
+      { nome: 'PARCIAL',               gid: '1226112246' },
+      { nome: 'MANUTENÇÃO PREVENTIVA', gid: '522996516'  },
+      { nome: 'MANUTENÇÃO PESADA',     gid: '189511042'  },
+      { nome: 'MANUTENÇÃO LINHA VIVA', gid: '444956809'  },
+      { nome: 'MEDIÇÃO GRÁFICA',       gid: '889068289'  },
+      { nome: 'CONSTRUÇÃO - Metro',    gid: '584650671'  },
+      { nome: 'META FATURAMENTO',      gid: '137800100'  },
+    ]
     const out = {}
-    for (const aba of all) {
+    for (const a of abas) {
       try {
-        const csv  = await fetchSheet(aba.gid)
-        const rows = parseCSVRaw(csv)
-        out[aba.nome] = { totalRows: rows.length, row0: rows[0], row1: rows[1], row2: rows[2] }
-      } catch (e) { out[aba.nome] = { error: e.message } }
+        const rows = parseCSVRaw(await fetchSheet(a.gid))
+        out[a.nome] = { totalRows: rows.length, row0: rows[0], row1: rows[1], row2: rows[2] }
+      } catch (e) { out[a.nome] = { error: e.message } }
     }
     return res.status(200).json(out)
   }
 
   const execucoes = [], metas = [], errors = [], counts = {}
 
-  // PARCIAL — skip row 0 (totais) + row 1 (header)
-  try {
-    const csv  = await fetchSheet('1226112246')
-    const rows = parseCSVRaw(csv)
-    let n = 0
-    for (let i = 2; i < rows.length; i++) {
-      const e = normalizeParcial(rows[i], i)
-      if (e) { execucoes.push(e); n++ }
+  const run = async (label, gid, startRow, normFn) => {
+    try {
+      const rows = parseCSVRaw(await fetchSheet(gid))
+      let n = 0
+      for (let i = startRow; i < rows.length; i++) {
+        const e = normFn(rows[i], i)
+        if (e) { execucoes.push(e); n++ }
+      }
+      counts[label] = { totalRows: rows.length, loaded: n }
+    } catch (err) {
+      errors.push(`${label}: ${err.message}`)
+      counts[label] = { error: err.message }
     }
-    counts['PARCIAL'] = { totalRows: rows.length, loaded: n }
-  } catch (err) { errors.push(`PARCIAL: ${err.message}`); counts['PARCIAL'] = { error: err.message } }
+  }
 
-  // MANUTENÇÃO PREVENTIVA
-  try {
-    const csv  = await fetchSheet('522996516')
-    const rows = parseCSVRaw(csv)
-    let n = 0
-    for (let i = 2; i < rows.length; i++) {
-      const e = normalizeManutencao(rows[i], 'MANUTENÇÃO PREVENTIVA', i)
-      if (e) { execucoes.push(e); n++ }
-    }
-    counts['MANUTENÇÃO PREVENTIVA'] = { totalRows: rows.length, loaded: n }
-  } catch (err) { errors.push(`MANUTENÇÃO PREVENTIVA: ${err.message}`); counts['MANUTENÇÃO PREVENTIVA'] = { error: err.message } }
+  await run('PARCIAL',               '1226112246', 2, (r, i) => normalizeParcial(r, i))
+  await run('MANUTENÇÃO PREVENTIVA', '522996516',  2, (r, i) => normalizeManutencao(r, 'MANUTENÇÃO PREVENTIVA', i))
+  await run('MANUTENÇÃO PESADA',     '189511042',  2, (r, i) => normalizeManutencao(r, 'MANUTENÇÃO PESADA', i))
+  await run('MANUTENÇÃO LINHA VIVA', '444956809',  2, (r, i) => normalizeLinhaViva(r, i))
+  await run('MEDIÇÃO GRÁFICA',       '889068289',  2, (r, i) => normalizeManutencao(r, 'MEDIÇÃO GRÁFICA', i))
+  await run('CONSTRUÇÃO - Metro',    '584650671',  2, (r, i) => normalizeConstrucao(r, i))
 
-  // MANUTENÇÃO PESADA
+  // META FATURAMENTO — header na linha 0, dados a partir de 1
   try {
-    const csv  = await fetchSheet('189511042')
-    const rows = parseCSVRaw(csv)
-    let n = 0
-    for (let i = 2; i < rows.length; i++) {
-      const e = normalizeManutencao(rows[i], 'MANUTENÇÃO PESADA', i)
-      if (e) { execucoes.push(e); n++ }
-    }
-    counts['MANUTENÇÃO PESADA'] = { totalRows: rows.length, loaded: n }
-  } catch (err) { errors.push(`MANUTENÇÃO PESADA: ${err.message}`); counts['MANUTENÇÃO PESADA'] = { error: err.message } }
-
-  // MANUTENÇÃO LINHA VIVA
-  try {
-    const csv  = await fetchSheet('444956809')
-    const rows = parseCSVRaw(csv)
-    let n = 0
-    for (let i = 2; i < rows.length; i++) {
-      const e = normalizeLinhaViva(rows[i], i)
-      if (e) { execucoes.push(e); n++ }
-    }
-    counts['MANUTENÇÃO LINHA VIVA'] = { totalRows: rows.length, loaded: n }
-  } catch (err) { errors.push(`MANUTENÇÃO LINHA VIVA: ${err.message}`); counts['MANUTENÇÃO LINHA VIVA'] = { error: err.message } }
-
-  // MEDIÇÃO GRÁFICA
-  try {
-    const csv  = await fetchSheet('889068289')
-    const rows = parseCSVRaw(csv)
-    let n = 0
-    for (let i = 2; i < rows.length; i++) {
-      const e = normalizeManutencao(rows[i], 'MEDIÇÃO GRÁFICA', i)
-      if (e) { execucoes.push(e); n++ }
-    }
-    counts['MEDIÇÃO GRÁFICA'] = { totalRows: rows.length, loaded: n }
-  } catch (err) { errors.push(`MEDIÇÃO GRÁFICA: ${err.message}`); counts['MEDIÇÃO GRÁFICA'] = { error: err.message } }
-
-  // META FATURAMENTO — header na linha 0
-  try {
-    const csv  = await fetchSheet(GID_META)
-    const rows = parseCSVRaw(csv)
+    const rows = parseCSVRaw(await fetchSheet('137800100'))
     let n = 0
     for (let i = 1; i < rows.length; i++) {
       const m = normalizeMeta(rows[i])
       if (m) { metas.push(m); n++ }
     }
     counts['META FATURAMENTO'] = { totalRows: rows.length, loaded: n }
-  } catch (err) { errors.push(`META FATURAMENTO: ${err.message}`); counts['META FATURAMENTO'] = { error: err.message } }
+  } catch (err) {
+    errors.push(`META FATURAMENTO: ${err.message}`)
+    counts['META FATURAMENTO'] = { error: err.message }
+  }
 
   return res.status(200).json({
     execucoes, metas,
