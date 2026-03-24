@@ -33,14 +33,15 @@ export function applyFilters(data, filters) {
     if (filters.tipoExecucao?.length    && !filters.tipoExecucao.includes(e.tipoExecucao))      return false
     if (filters.statusPagamento?.length && !filters.statusPagamento.includes(e.statusPagamento)) return false
 
-    // Filtro de período — filtra por janelaEnvio (ou dataApontamento como fallback)
-    const refDate = e.janelaEnvio || e.dataApontamento
-    if (filters.dateFrom && refDate) {
-      if (refDate < filters.dateFrom) return false
-    }
-    if (filters.dateTo && refDate) {
-      if (refDate > filters.dateTo) return false
-    }
+    // Filtro por janela de envio (dateFrom / dateTo)
+    const refEnvio = e.janelaEnvio || e.dataApontamento
+    if (filters.dateFrom && refEnvio && refEnvio < filters.dateFrom) return false
+    if (filters.dateTo   && refEnvio && refEnvio > filters.dateTo)   return false
+
+    // Filtro por janela de pagamento (payFrom / payTo)
+    const refPag = e.janelaPagamento
+    if (filters.payFrom && refPag && refPag < filters.payFrom) return false
+    if (filters.payTo   && refPag && refPag > filters.payTo)   return false
 
     return true
   })
