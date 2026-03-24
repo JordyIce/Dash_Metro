@@ -53,8 +53,9 @@ function parseDate(s) {
 // [15]VL_PAGO [17]JANELA_PAG [19]STATUS
 function normalizeParcial(row, idx) {
   const sgm = row[2], ot = row[3], id = sgm || ot || `PARCIAL-IDX-${idx}`
-  const status = row[19]
-  if (!status) return null
+  const status = row[19] || 'SEM STATUS'
+  // descarta só linhas completamente vazias
+  if (!row[3] && !row[2] && !row[12] && !row[15]) return null
   return {
     _id: `PARCIAL-${idx}`, idExecucao: id, sgm, ot,
     tipoExecucao: row[0] || 'PARCIAL',
@@ -79,8 +80,8 @@ function normalizeParcial(row, idx) {
 // [24]JANELA_PAG [25]QTD_POSTE [26]QTD_KLC [35]STATUS
 function normalizeManutencao(row, fonte, idx) {
   const sgm = row[2], ot = row[3], id = sgm || ot || `MANUT-IDX-${idx}`
-  const status = row[35]
-  if (!status) return null
+  const status = row[35] || 'SEM STATUS'
+  if (!row[3] && !row[2] && !row[19] && !row[22]) return null
   return {
     _id: `${fonte}-${idx}`, idExecucao: id, sgm, ot,
     tipoExecucao: row[0] || fonte,
@@ -104,8 +105,8 @@ function normalizeManutencao(row, fonte, idx) {
 // MANUTENÇÃO LINHA VIVA (39 colunas — [3] = N° INCIDÊNCIA):
 function normalizeLinhaViva(row, idx) {
   const sgm = row[2], ot = row[3], id = sgm || ot || `LV-IDX-${idx}`
-  const status = row[35]
-  if (!status) return null
+  const status = row[35] || 'SEM STATUS'
+  if (!row[3] && !row[2] && !row[19] && !row[22]) return null
   return {
     _id: `MANUTENCAO LINHA VIVA-${idx}`, idExecucao: id, sgm, ot,
     tipoExecucao: row[0] || 'MANUTENÇÃO LINHA VIVA',
@@ -135,8 +136,8 @@ function normalizeLinhaViva(row, idx) {
 function normalizeConstrucao(row, idx) {
   // Aceita linhas com pelo menos 23 colunas (até VALOR PAGO)
   const lcl = row[2], ot = row[3], id = lcl || ot || `CONSTR-IDX-${idx}`
-  const status = row[36] || row[35] || ''
-  if (!status) return null
+  const status = row[36] || row[35] || 'SEM STATUS'
+  if (!row[3] && !row[2] && !row[19] && !row[22]) return null
   return {
     _id: `CONSTRUCAO-METRO-${idx}`, idExecucao: id, sgm: lcl, ot,
     tipoExecucao: 'CONSTRUÇÃO',
