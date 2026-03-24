@@ -1,27 +1,41 @@
 const SHEET_ID = '1HfQ2zj0De6gtFS39z-VR8ZCgRjcK5umusRnG_aYbh_4'
 
 // ── CSV parser ────────────────────────────────────────────────────────────────
-function parseCSVLine(line) {
-  const result = []; let cur = ''; let inQ = false
-  for (let i = 0; i < line.length; i++) {
-    const c = line[i]
-    if (c === '"') { if (inQ && line[i+1] === '"') { cur += '"'; i++ } else { inQ = !inQ } }
-    else if (c === ',' && !inQ) { result.push(cur); cur = '' }
-    else { cur += c }
-  }
-  result.push(cur)
-  return result
-}
-
+// ATENÇÃO: NÃO separamos linhas com split('\n') antes de parsear — campos com
+// quebra de linha interna (dentro de aspas) seriam cortados incorretamente,
+// descartando a linha inteira por falta de STATUS.
 function parseCSVRaw(text) {
-  return text.split('\n').map(l => l.replace(/\r$/, '')).filter(l => l.trim())
-    .map(parseCSVLine)
-    .map(row => {
-      const trimmed = row.map(v => v.trim())
-      // Pad to 39 columns so trailing empty cells never cause index misses
-      while (trimmed.length < 39) trimmed.push('')
-      return trimmed
-    })
+  const rows = []
+  let row = [], cur = '', inQ = false
+  const s = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i]
+    if (c === '"') {
+      if (inQ && s[i + 1] === '"') { cur += '"'; i++ }   // escaped quote
+      else { inQ = !inQ }
+    } else if (c === ',' && !inQ) {
+      row.push(cur.trim()); cur = ''
+    } else if (c === '\n' && !inQ) {
+      row.push(cur.trim()); cur = ''
+      if (row.some(v => v !== '')) {
+        while (row.length < 39) row.push('')
+        rows.push(row)
+      }
+      row = []
+    } else {
+      cur += c
+    }
+  }
+  // última linha sem \n terminal
+  if (cur || row.length > 0) {
+    row.push(cur.trim())
+    if (row.some(v => v !== '')) {
+      while (row.length < 39) row.push('')
+      rows.push(row)
+    }
+  }
+  return rows
 }
 
 // ── Value helpers ─────────────────────────────────────────────────────────────
@@ -47,10 +61,6 @@ function parseDate(s) {
 
 // ── Normalizers (posicionais) ─────────────────────────────────────────────────
 
-// PARCIAL (20 colunas):
-// [0]TIPO [1]REGIONAL [2]LCL/OS [3]OT [4]SISTEMA [5]MUNICÍPIO [6]ESTADO
-// [11]DATA_ENVIO [12]VL_APONTADO [13]DATA_VALIDACAO [14]JANELA_ENVIO
-// [15]VL_PAGO [17]JANELA_PAG [19]STATUS
 function normalizeParcial(row, idx) {
   const sgm = row[2], ot = row[3], id = sgm || ot || `PARCIAL-IDX-${idx}`
   const status = row[19]
@@ -72,11 +82,6 @@ function normalizeParcial(row, idx) {
   }
 }
 
-// MANUTENÇÃO PREVENTIVA / PESADA / MEDIÇÃO GRÁFICA (39 colunas):
-// [0]TIPO [1]REGIONAL [2]SGM [3]OT [4]SISTEMA [5]DATA_ENERG [6]MUNICÍPIO
-// [9]ESTADO [15]DATA_APONTAMENTO [16]DATA_LIQUIDACAO [17]DATA_UF
-// [18]VL_ORCADO [19]VL_APONTADO [20]DATA_UV [21]JANELA_ENVIO [22]VL_PAGO
-// [24]JANELA_PAG [25]QTD_POSTE [26]QTD_KLC [35]STATUS
 function normalizeManutencao(row, fonte, idx) {
   const sgm = row[2], ot = row[3], id = sgm || ot || `MANUT-IDX-${idx}`
   const status = row[35]
@@ -101,7 +106,6 @@ function normalizeManutencao(row, fonte, idx) {
   }
 }
 
-// MANUTENÇÃO LINHA VIVA (39 colunas — [3] = N° INCIDÊNCIA):
 function normalizeLinhaViva(row, idx) {
   const sgm = row[2], ot = row[3], id = sgm || ot || `LV-IDX-${idx}`
   const status = row[35]
@@ -127,15 +131,9 @@ function normalizeLinhaViva(row, idx) {
   }
 }
 
-// CONSTRUÇÃO - Metro (38 colunas — tem DATA DE RETIRADA extra em [32]):
-// [0]TIPO [1]REGIONAL [2]LCL [3]OT [4]SISTEMA [5]DATA_ENERG [6]MUNICÍPIO
-// [9]ESTADO [15]DATA_APONTAMENTO [16]DATA_LIQUIDACAO [17]DATA_UF
-// [18]VL_ORCADO [19]VL_APONTADO [20]DATA_UV [21]JANELA_ENVIO [22]VL_PAGO
-// [24]JANELA_PAG [25]QTD_POSTE [26]QTD_KLC [36]STATUS (deslocado +1)
 function normalizeConstrucao(row, idx) {
-  // Aceita linhas com pelo menos 23 colunas (até VALOR PAGO)
   const lcl = row[2], ot = row[3], id = lcl || ot || `CONSTR-IDX-${idx}`
-  const status = row[36] || row[35]  // [36]=STATUS normal, [35]=fallback se sem DATA DE RETIRADA
+  const status = row[36] || row[35]
   if (!status) return null
   return {
     _id: `CONSTRUCAO-METRO-${idx}`, idExecucao: id, sgm: lcl, ot,
@@ -158,7 +156,6 @@ function normalizeConstrucao(row, idx) {
   }
 }
 
-// META FATURAMENTO: [0]JANELA [1]META_MANUT [2]META_CONST [3]META_TOTAL
 function normalizeMeta(row) {
   const janela = parseDate(row[0])
   if (!janela) return null
@@ -170,7 +167,7 @@ function normalizeMeta(row) {
   }
 }
 
-// ── Fetch — /export ignora filtros ativos da planilha ─────────────────────────
+// ── Fetch ─────────────────────────────────────────────────────────────────────
 async function fetchSheet(gid) {
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`
   const r = await fetch(url, {
@@ -187,7 +184,6 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
   if (req.method === 'OPTIONS') return res.status(200).end()
 
-  // ?debug=1
   if (req.query?.debug === '1') {
     const abas = [
       { nome: 'PARCIAL',               gid: '1226112246' },
@@ -232,7 +228,6 @@ export default async function handler(req, res) {
   await run('MEDIÇÃO GRÁFICA',       '889068289',  2, (r, i) => normalizeManutencao(r, 'MEDIÇÃO GRÁFICA', i))
   await run('CONSTRUÇÃO - Metro',    '584650671',  2, (r, i) => normalizeConstrucao(r, i))
 
-  // META FATURAMENTO — header na linha 0, dados a partir de 1
   try {
     const rows = parseCSVRaw(await fetchSheet('137800100'))
     let n = 0
