@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { BarChart3, TrendingUp, Clock, CreditCard, Zap, RefreshCw } from 'lucide-react'
+import { BarChart3, TrendingUp, Clock, CreditCard, RefreshCw } from 'lucide-react'
 import { useData } from '../context/DataContext'
 
 const NAV = [
@@ -20,11 +20,11 @@ export default function Sidebar() {
       <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid #1C2340' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
-            width: 30, height: 30, borderRadius: 8, background: '#F59E0B',
+            width: 44, height: 44, borderRadius: 8,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 0 14px rgba(245,158,11,.45)',
+            background: '#fff', padding: 4,
           }}>
-            <Zap size={14} color="#080B18" fill="#080B18" />
+            <img src="/logo-beq.png" alt="BeQ" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <div>
             <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, color: '#fff', lineHeight: 1 }}>BeQ</p>
