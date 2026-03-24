@@ -61,7 +61,7 @@ export default function Faturamento() {
           <KPICard label="Total Faturado"    value={fmtBRL(totalPago)}  accent="emerald" trend={trend !== null ? {value:trend, label:'vs mês anterior'} : undefined}/>
           <KPICard label="Total Apontado"    value={fmtBRL(totalApont)} accent="indigo"/>
           <KPICard label="Melhor Janela"     value={best ? fmtBRL(best.valorPago) : '—'} sub={best?.label} accent="amber"/>
-          <KPICard label="Janelas com Dados" value={fatJanela.length.toString()} accent="muted"/>
+          <KPICard label="Qtd. Obras" value={new Set(execs.map(e => e.idExecucao)).size.toLocaleString('pt-BR')} accent="muted"/>
         </div>
 
         <ChartCard title="Evolução do Faturamento" subtitle="Valor pago por janela + curva acumulada">
