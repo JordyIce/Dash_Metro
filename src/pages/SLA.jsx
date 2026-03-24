@@ -1,11 +1,23 @@
 import { useMemo } from 'react'
-import { RadarChart, Radar, PolarGrid, PolarAngleAxis, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import {
+  RadarChart, Radar, PolarGrid, PolarAngleAxis,
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList
+} from 'recharts'
 import { useData } from '../context/DataContext'
 import { applyFilters, avgSLA, slaApontamento, slaValidacao, slaLiquidacao, slaPorTipo } from '../lib/metrics'
 import { TIPO_COLORS, CHART_PALETTE } from '../lib/constants'
 import { ChartCard, PageHeader, LoadingState, ErrorState, SLAFarol, CustomTooltip } from '../components/UI'
 
 const G = { display: 'grid', gap: 16 }
+
+function HBarDiasLabel({ x, y, width, height, value }) {
+  if (!value || value === 0) return null
+  return (
+    <text x={x + width + 6} y={y + height / 2 + 4} fill="#94A3B8" fontSize={10} fontFamily="'IBM Plex Mono', monospace">
+      {`${value}d`}
+    </text>
+  )
+}
 
 export default function SLA() {
   const { data, loading, error, filters, refresh } = useData()
@@ -14,7 +26,6 @@ export default function SLA() {
   const avgAp  = useMemo(() => avgSLA(execs, slaApontamento), [execs])
   const avgVal = useMemo(() => avgSLA(execs, slaValidacao),   [execs])
   const avgLiq = useMemo(() => avgSLA(execs, slaLiquidacao),  [execs])
-
   const porTipo = useMemo(() => slaPorTipo(execs), [execs])
 
   const radarData = [
@@ -34,20 +45,23 @@ export default function SLA() {
       <PageHeader title="SLA" subtitle="Indicadores de prazo operacional e ciclo de pagamento" />
       <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-        {/* Farois */}
         <div style={{ ...G, gridTemplateColumns: 'repeat(3, 1fr)' }}>
           <SLAFarol label="SLA Médio de Apontamento" value={avgAp}  thresholds={[10, 20]}/>
           <SLAFarol label="SLA Médio de Validação"   value={avgVal} thresholds={[15, 30]}/>
           <SLAFarol label="SLA Médio de Liquidação"  value={avgLiq} thresholds={[20, 45]}/>
         </div>
 
-        {/* Radar + Tabela */}
         <div style={{ ...G, gridTemplateColumns: '1fr 1fr' }}>
           <ChartCard title="Visão Geral SLA" subtitle="Dias médios por etapa">
             <ResponsiveContainer width="100%" height={280}>
-              <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+              <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
                 <PolarGrid stroke="#1C2340"/>
-                <PolarAngleAxis dataKey="subject" tick={{fill:'#94A3B8',fontSize:12}}/>
+                <PolarAngleAxis dataKey="subject" tick={{fill:'#94A3B8',fontSize:12}}
+                  tickFormatter={v => {
+                    const val = radarData.find(r => r.subject === v)?.value
+                    return val ? `${v} (${val}d)` : v
+                  }}
+                />
                 <Radar name="SLA Médio" dataKey="value" stroke="#F59E0B" fill="#F59E0B" fillOpacity={0.15} strokeWidth={2}/>
               </RadarChart>
             </ResponsiveContainer>
@@ -74,15 +88,15 @@ export default function SLA() {
           </ChartCard>
         </div>
 
-        {/* Charts por tipo */}
         <div style={{ ...G, gridTemplateColumns: '1fr 1fr' }}>
           <ChartCard title="SLA Apontamento por Tipo" subtitle="Dias: Data Energização → Data Apontamento">
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={slaApTipo} layout="vertical" margin={{top:0,right:40,left:0,bottom:0}}>
+              <BarChart data={slaApTipo} layout="vertical" margin={{top:0,right:60,left:0,bottom:0}}>
                 <XAxis type="number" unit="d" tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
                 <YAxis type="category" dataKey="name" width={130} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
                 <Tooltip content={<CustomTooltip currency={false}/>}/>
                 <Bar dataKey="value" name="SLA (dias)" radius={[0,4,4,0]}>
+                  <LabelList content={<HBarDiasLabel/>}/>
                   {slaApTipo.map((t,i) => <Cell key={t.name} fill={TIPO_COLORS[t.name] ?? CHART_PALETTE[i%CHART_PALETTE.length]}/>)}
                 </Bar>
               </BarChart>
@@ -91,11 +105,12 @@ export default function SLA() {
 
           <ChartCard title="SLA Validação por Tipo" subtitle="Dias: Janela Envio → Janela Pagamento">
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={slaValTipo} layout="vertical" margin={{top:0,right:40,left:0,bottom:0}}>
+              <BarChart data={slaValTipo} layout="vertical" margin={{top:0,right:60,left:0,bottom:0}}>
                 <XAxis type="number" unit="d" tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
                 <YAxis type="category" dataKey="name" width={130} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
                 <Tooltip content={<CustomTooltip currency={false}/>}/>
                 <Bar dataKey="value" name="SLA (dias)" radius={[0,4,4,0]}>
+                  <LabelList content={<HBarDiasLabel/>}/>
                   {slaValTipo.map((t,i) => <Cell key={t.name} fill={TIPO_COLORS[t.name] ?? CHART_PALETTE[i%CHART_PALETTE.length]}/>)}
                 </Bar>
               </BarChart>
