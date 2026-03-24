@@ -135,7 +135,7 @@ function normalizeLinhaViva(row, idx) {
 function normalizeConstrucao(row, idx) {
   // Aceita linhas com pelo menos 23 colunas (até VALOR PAGO)
   const lcl = row[2], ot = row[3], id = lcl || ot || `CONSTR-IDX-${idx}`
-  const status = row[36]
+  const status = row[36] || row[35]  // [36]=STATUS normal, [35]=fallback se sem DATA DE RETIRADA
   if (!status) return null
   return {
     _id: `CONSTRUCAO-METRO-${idx}`, idExecucao: id, sgm: lcl, ot,
