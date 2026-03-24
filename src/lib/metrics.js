@@ -1,6 +1,11 @@
 // ── Formatadores ──────────────────────────────────────────────────────────────
 export function fmtBRL(n) {
-  return (n ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+  return (n ?? 0).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
 }
 
 export function fmtDate(s) {
