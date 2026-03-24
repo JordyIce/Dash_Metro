@@ -52,9 +52,9 @@ function parseDate(s) {
 // [11]DATA_ENVIO [12]VL_APONTADO [13]DATA_VALIDACAO [14]JANELA_ENVIO
 // [15]VL_PAGO [17]JANELA_PAG [19]STATUS
 function normalizeParcial(row, idx) {
-  const sgm = row[2], ot = row[3], id = sgm || ot
+  const sgm = row[2], ot = row[3], id = sgm || ot || `PARCIAL-IDX-${idx}`
   const status = row[19]
-  if (!id || !status) return null
+  if (!status) return null
   return {
     _id: `PARCIAL-${idx}`, idExecucao: id, sgm, ot,
     tipoExecucao: row[0] || 'PARCIAL',
@@ -78,9 +78,9 @@ function normalizeParcial(row, idx) {
 // [18]VL_ORCADO [19]VL_APONTADO [20]DATA_UV [21]JANELA_ENVIO [22]VL_PAGO
 // [24]JANELA_PAG [25]QTD_POSTE [26]QTD_KLC [35]STATUS
 function normalizeManutencao(row, fonte, idx) {
-  const sgm = row[2], ot = row[3], id = sgm || ot
+  const sgm = row[2], ot = row[3], id = sgm || ot || `MANUT-IDX-${idx}`
   const status = row[35]
-  if (!id || !status) return null
+  if (!status) return null
   return {
     _id: `${fonte}-${idx}`, idExecucao: id, sgm, ot,
     tipoExecucao: row[0] || fonte,
@@ -103,9 +103,9 @@ function normalizeManutencao(row, fonte, idx) {
 
 // MANUTENÇÃO LINHA VIVA (39 colunas — [3] = N° INCIDÊNCIA):
 function normalizeLinhaViva(row, idx) {
-  const sgm = row[2], ot = row[3], id = sgm || ot
+  const sgm = row[2], ot = row[3], id = sgm || ot || `LV-IDX-${idx}`
   const status = row[35]
-  if (!id || !status) return null
+  if (!status) return null
   return {
     _id: `MANUTENCAO LINHA VIVA-${idx}`, idExecucao: id, sgm, ot,
     tipoExecucao: row[0] || 'MANUTENÇÃO LINHA VIVA',
@@ -134,10 +134,7 @@ function normalizeLinhaViva(row, idx) {
 // [24]JANELA_PAG [25]QTD_POSTE [26]QTD_KLC [36]STATUS (deslocado +1)
 function normalizeConstrucao(row, idx) {
   // Aceita linhas com pelo menos 23 colunas (até VALOR PAGO)
-  const lcl = row[2], ot = row[3]
-  // Usa OT ou LCL como ID; se ambos vazios, gera ID pelo índice para não perder o registro
-  const id = lcl || ot || `CONSTR-${idx}`
-  // STATUS pode estar em [36] (38 cols) ou [35] (37 cols) — pega o que tiver
+  const lcl = row[2], ot = row[3], id = lcl || ot || `CONSTR-IDX-${idx}`
   const status = row[36] || row[35] || ''
   if (!status) return null
   return {
