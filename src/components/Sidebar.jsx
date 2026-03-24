@@ -20,11 +20,11 @@ export default function Sidebar() {
       <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid #1C2340' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
-            width: 44, height: 44, borderRadius: 8,
+            width: 48, height: 36, borderRadius: 6,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: '#fff', padding: 4,
+            background: 'transparent', padding: 0,
           }}>
-            <img src="/logo-beq.png" alt="BeQ" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <img src="/logo-beq.png" alt="BeQ" style={{ width: 52, height: 40, objectFit: 'contain', display: 'block', mixBlendMode: 'screen', filter: 'brightness(2) saturate(0.6)' }} />
           </div>
           <div>
             <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, color: '#fff', lineHeight: 1 }}>BeQ</p>
