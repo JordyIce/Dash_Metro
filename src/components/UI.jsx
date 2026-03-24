@@ -1,0 +1,277 @@
+import { useState, useRef, useEffect } from 'react'
+import { ChevronDown, X, SlidersHorizontal, Zap, AlertTriangle, RefreshCw } from 'lucide-react'
+import { useData } from '../context/DataContext'
+import { fmtDate } from '../lib/metrics'
+
+// ── KPI Card ──────────────────────────────────────────────────────────────────
+const ACCENT = {
+  amber:   { border: 'rgba(245,158,11,.2)',  icon: 'rgba(245,158,11,.1)',  iconC: '#F59E0B', shadow: 'rgba(245,158,11,.05)' },
+  indigo:  { border: 'rgba(99,102,241,.2)',  icon: 'rgba(99,102,241,.1)',  iconC: '#6366F1', shadow: 'rgba(99,102,241,.05)' },
+  emerald: { border: 'rgba(16,185,129,.2)',  icon: 'rgba(16,185,129,.1)',  iconC: '#10B981', shadow: 'rgba(16,185,129,.05)' },
+  rose:    { border: 'rgba(244,63,94,.2)',   icon: 'rgba(244,63,94,.1)',   iconC: '#F43F5E', shadow: 'rgba(244,63,94,.05)'  },
+  muted:   { border: '#1C2340',             icon: '#131829',              iconC: '#94A3B8', shadow: 'transparent'          },
+}
+
+export function KPICard({ label, value, sub, icon, accent = 'muted', trend }) {
+  const a = ACCENT[accent] ?? ACCENT.muted
+  return (
+    <div style={{
+      background: '#0E1225', borderRadius: 12, border: `1px solid ${a.border}`,
+      padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12,
+      boxShadow: `0 0 20px ${a.shadow}`,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <p style={{ fontSize: 10, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 500 }}>{label}</p>
+        {icon && (
+          <div style={{ width: 30, height: 30, borderRadius: 8, background: a.icon, display: 'flex', alignItems: 'center', justifyContent: 'center', color: a.iconC }}>
+            {icon}
+          </div>
+        )}
+      </div>
+      <div>
+        <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, color: '#fff', lineHeight: 1 }}>{value}</p>
+        {sub && <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 6 }}>{sub}</p>}
+      </div>
+      {trend && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600, color: trend.value >= 0 ? '#10B981' : '#F43F5E' }}>
+            {trend.value >= 0 ? '▲' : '▼'} {Math.abs(trend.value).toFixed(1)}%
+          </span>
+          <span style={{ fontSize: 11, color: '#475569' }}>{trend.label}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Chart Card ────────────────────────────────────────────────────────────────
+export function ChartCard({ title, subtitle, children, style, action }) {
+  return (
+    <div style={{ background: '#0E1225', borderRadius: 12, border: '1px solid #1C2340', padding: 20, ...style }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div>
+          <h3 style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{title}</h3>
+          {subtitle && <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 3 }}>{subtitle}</p>}
+        </div>
+        {action}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+// ── Page Header ───────────────────────────────────────────────────────────────
+export function PageHeader({ title, subtitle }) {
+  return (
+    <div style={{
+      position: 'sticky', top: 0, zIndex: 30,
+      background: 'rgba(8,11,24,.85)', backdropFilter: 'blur(12px)',
+      borderBottom: '1px solid #1C2340', padding: '16px 24px',
+    }}>
+      <div style={{ marginBottom: 12 }}>
+        <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, color: '#fff' }}>{title}</h1>
+        {subtitle && <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 3 }}>{subtitle}</p>}
+      </div>
+      <FilterBar />
+    </div>
+  )
+}
+
+// ── Filter Bar ────────────────────────────────────────────────────────────────
+function MultiSelect({ label, options, selected, onChange, fmt }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [])
+
+  const toggle = v => onChange(selected.includes(v) ? selected.filter(s => s !== v) : [...selected, v])
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px',
+          borderRadius: 8, border: selected.length > 0 ? '1px solid rgba(245,158,11,.4)' : '1px solid #1C2340',
+          background: selected.length > 0 ? 'rgba(245,158,11,.1)' : '#131829',
+          color: selected.length > 0 ? '#F59E0B' : '#94A3B8',
+          fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+          transition: 'all .15s',
+        }}
+      >
+        {label}
+        {selected.length > 0 && (
+          <span style={{
+            background: '#F59E0B', color: '#080B18', borderRadius: '50%',
+            width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 9, fontWeight: 700,
+          }}>{selected.length}</span>
+        )}
+        <ChevronDown size={11} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }} />
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 50,
+          background: '#0E1225', border: '1px solid #1C2340', borderRadius: 12,
+          boxShadow: '0 8px 32px rgba(0,0,0,.5)', padding: 4,
+          minWidth: 220, maxHeight: 260, overflowY: 'auto',
+        }}>
+          {options.map(opt => (
+            <button
+              key={opt}
+              onClick={() => toggle(opt)}
+              style={{
+                width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8,
+                padding: '8px 12px', borderRadius: 8, fontSize: 11, cursor: 'pointer',
+                background: selected.includes(opt) ? 'rgba(245,158,11,.1)' : 'transparent',
+                color: selected.includes(opt) ? '#F59E0B' : '#94A3B8',
+                border: 'none', fontFamily: 'inherit', transition: 'all .1s',
+              }}
+            >
+              <div style={{
+                width: 14, height: 14, borderRadius: 3, border: selected.includes(opt) ? '1px solid #F59E0B' : '1px solid #475569',
+                background: selected.includes(opt) ? '#F59E0B' : 'transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                {selected.includes(opt) && <span style={{ fontSize: 8, color: '#080B18', fontWeight: 700 }}>✓</span>}
+              </div>
+              {fmt ? fmt(opt) : opt}
+            </button>
+          ))}
+          {options.length === 0 && <p style={{ fontSize: 11, color: '#94A3B8', padding: '8px 12px' }}>Sem opções</p>}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function FilterBar() {
+  const { data, filters, setFilter, clearFilters } = useData()
+  if (!data) return null
+  const ex = data.execucoes
+  const tipos  = [...new Set(ex.map(e => e.tipoExecucao))].filter(Boolean).sort()
+  const status = [...new Set(ex.map(e => e.statusPagamento))].filter(Boolean).sort()
+  const jEnv   = [...new Set(ex.map(e => e.janelaEnvio).filter(Boolean))].sort()
+  const jPag   = [...new Set(ex.map(e => e.janelaPagamento).filter(Boolean))].sort()
+  const hasActive = Object.values(filters).some(v => v.length > 0)
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#475569', fontSize: 11 }}>
+        <SlidersHorizontal size={11} />
+        <span>Filtros</span>
+      </div>
+      <MultiSelect label="Tipo"            options={tipos}  selected={filters.tipoExecucao}    onChange={v => setFilter('tipoExecucao',   v)} />
+      <MultiSelect label="Status"          options={status} selected={filters.statusPagamento} onChange={v => setFilter('statusPagamento',v)} />
+      <MultiSelect label="Janela Envio"    options={jEnv}   selected={filters.janelaEnvio}     onChange={v => setFilter('janelaEnvio',    v)} fmt={fmtDate} />
+      <MultiSelect label="Janela Pgto"     options={jPag}   selected={filters.janelaPagamento} onChange={v => setFilter('janelaPagamento',v)} fmt={fmtDate} />
+      {hasActive && (
+        <button
+          onClick={clearFilters}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px',
+            borderRadius: 8, border: '1px solid rgba(244,63,94,.3)', background: 'transparent',
+            color: '#F43F5E', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit',
+          }}
+        >
+          <X size={10} /> Limpar
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ── Loading / Error ───────────────────────────────────────────────────────────
+export function LoadingState() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 16 }}>
+      <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(245,158,11,.1)', border: '1px solid rgba(245,158,11,.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Zap size={20} color="#F59E0B" fill="#F59E0B" style={{ animation: 'pulse 1.5s ease-in-out infinite' }} />
+      </div>
+      <div style={{ textAlign: 'center' }}>
+        <p style={{ color: '#fff', fontWeight: 500 }}>Carregando dados…</p>
+        <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>Buscando planilhas do Google Sheets</p>
+      </div>
+      <div style={{ display: 'flex', gap: 6 }}>
+        {[0,1,2].map(i => (
+          <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#F59E0B', animation: `bounce 1s ${i * 0.15}s ease-in-out infinite` }} />
+        ))}
+      </div>
+      <style>{`
+        @keyframes pulse  { 0%,100%{opacity:1} 50%{opacity:.4} }
+        @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+      `}</style>
+    </div>
+  )
+}
+
+export function ErrorState({ message, onRetry }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 16 }}>
+      <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(244,63,94,.1)', border: '1px solid rgba(244,63,94,.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <AlertTriangle size={20} color="#F43F5E" />
+      </div>
+      <div style={{ textAlign: 'center' }}>
+        <p style={{ color: '#fff', fontWeight: 500 }}>Erro ao carregar dados</p>
+        <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 4, maxWidth: 300 }}>{message}</p>
+      </div>
+      <button onClick={onRetry} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 10, border: '1px solid #1C2340', background: '#131829', color: '#94A3B8', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+        <RefreshCw size={13} /> Tentar novamente
+      </button>
+    </div>
+  )
+}
+
+// ── SLA Farol ─────────────────────────────────────────────────────────────────
+export function SLAFarol({ label, value, thresholds = [7, 15] }) {
+  const status = value === null ? 'none' : value <= thresholds[0] ? 'ok' : value <= thresholds[1] ? 'warn' : 'crit'
+  const S = {
+    none: { dot: '#475569', text: '#94A3B8', badge: '#1C2340', bdg: '#475569', lbl: '—'      },
+    ok:   { dot: '#10B981', text: '#10B981', badge: 'rgba(16,185,129,.1)',  bdg: 'rgba(16,185,129,.3)', lbl: 'Ótimo'   },
+    warn: { dot: '#F59E0B', text: '#F59E0B', badge: 'rgba(245,158,11,.1)',  bdg: 'rgba(245,158,11,.3)', lbl: 'Alerta'  },
+    crit: { dot: '#F43F5E', text: '#F43F5E', badge: 'rgba(244,63,94,.1)',   bdg: 'rgba(244,63,94,.3)',  lbl: 'Crítico' },
+  }[status]
+
+  return (
+    <div style={{ background: '#131829', border: '1px solid #1C2340', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div style={{ width: 10, height: 10, borderRadius: '50%', background: S.dot, flexShrink: 0, boxShadow: status !== 'none' ? `0 0 8px ${S.dot}` : 'none' }} />
+      <div style={{ flex: 1 }}>
+        <p style={{ fontSize: 11, color: '#94A3B8' }}>{label}</p>
+        <p style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, color: S.text, lineHeight: 1.2, marginTop: 2 }}>
+          {value !== null ? `${value} dias` : '—'}
+        </p>
+      </div>
+      <span style={{ fontSize: 10, fontWeight: 500, padding: '3px 8px', borderRadius: 20, background: S.badge, border: `1px solid ${S.bdg}`, color: S.text }}>
+        {S.lbl}
+      </span>
+    </div>
+  )
+}
+
+// ── Recharts Custom Tooltip ───────────────────────────────────────────────────
+export function CustomTooltip({ active, payload, label, currency = true }) {
+  if (!active || !payload?.length) return null
+  return (
+    <div style={{ background: '#0E1225', border: '1px solid #1C2340', borderRadius: 10, padding: '10px 14px', fontSize: 11, minWidth: 150, boxShadow: '0 8px 24px rgba(0,0,0,.4)' }}>
+      {label && <p style={{ color: '#94A3B8', marginBottom: 8, fontWeight: 500 }}>{label}</p>}
+      {payload.map((p, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.color ?? '#6366F1' }} />
+            <span style={{ color: '#94A3B8' }}>{p.name}</span>
+          </div>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600, color: '#fff' }}>
+            {currency
+              ? (p.value ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+              : (p.value ?? 0).toLocaleString('pt-BR')}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
