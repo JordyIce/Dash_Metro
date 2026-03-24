@@ -1,11 +1,47 @@
 import { useMemo } from 'react'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend, LabelList
+} from 'recharts'
 import { useData } from '../context/DataContext'
 import { applyFilters, fmtBRL, fmtDate, statusBreakdown, avgDesvio, desvioApontadoVsPago, desvioOrcadoVsPago } from '../lib/metrics'
 import { STATUS_COLORS, CHART_PALETTE } from '../lib/constants'
 import { KPICard, ChartCard, PageHeader, LoadingState, ErrorState, CustomTooltip } from '../components/UI'
 
 const G = { display: 'grid', gap: 16 }
+
+function BarLabel({ x, y, width, value }) {
+  if (!value || value === 0) return null
+  const label = value >= 1e6 ? `${(value/1e6).toFixed(1)}M` : `${(value/1e3).toFixed(0)}k`
+  return (
+    <text x={x + width / 2} y={y - 5} fill="#94A3B8" textAnchor="middle" fontSize={10} fontFamily="'IBM Plex Mono', monospace">
+      {label}
+    </text>
+  )
+}
+
+function DesvioLabel({ x, y, width, value }) {
+  if (value === 0 || value === undefined) return null
+  return (
+    <text x={x + width / 2} y={y - 5} fill={value >= 0 ? '#10B981' : '#F43F5E'}
+      textAnchor="middle" fontSize={10} fontFamily="'IBM Plex Mono', monospace" fontWeight={600}>
+      {`${value >= 0 ? '+' : ''}${value.toFixed(1)}%`}
+    </text>
+  )
+}
+
+function PieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }) {
+  if (percent < 0.04) return null
+  const RADIAN = Math.PI / 180
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5
+  const x = cx + radius * Math.cos(-midAngle * RADIAN)
+  const y = cy + radius * Math.sin(-midAngle * RADIAN)
+  return (
+    <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={600}>
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  )
+}
 
 export default function Pagamento() {
   const { data, loading, error, filters, refresh } = useData()
@@ -27,9 +63,9 @@ export default function Pagamento() {
   const devApPago  = useMemo(() => avgDesvio(execs, desvioApontadoVsPago), [execs])
   const devOrcPago = useMemo(() => avgDesvio(execs, desvioOrcadoVsPago),   [execs])
 
-  const totalPago  = statusBkdn.reduce((a,b) => a + b.valor, 0)
-  const pagoItem   = statusBkdn.find(s => s.status === 'PAGO')
-  const pctPago    = totalPago > 0 && pagoItem ? (pagoItem.valor / totalPago) * 100 : 0
+  const totalPago = statusBkdn.reduce((a,b) => a + b.valor, 0)
+  const pagoItem  = statusBkdn.find(s => s.status === 'PAGO')
+  const pctPago   = totalPago > 0 && pagoItem ? (pagoItem.valor / totalPago) * 100 : 0
 
   const desviosPorTipo = useMemo(() => {
     const tipos = [...new Set(execs.map(e => e.tipoExecucao))]
@@ -37,8 +73,8 @@ export default function Pagamento() {
       const sub = execs.filter(e => e.tipoExecucao === tipo)
       return {
         name:            tipo,
-        desvioApVsPago:  avgDesvio(sub, desvioApontadoVsPago)  ?? 0,
-        desvioOrcVsPago: avgDesvio(sub, desvioOrcadoVsPago)    ?? 0,
+        desvioApVsPago:  +(avgDesvio(sub, desvioApontadoVsPago) ?? 0).toFixed(1),
+        desvioOrcVsPago: +(avgDesvio(sub, desvioOrcadoVsPago)   ?? 0).toFixed(1),
       }
     })
   }, [execs])
@@ -54,17 +90,21 @@ export default function Pagamento() {
       <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
         <div style={{ ...G, gridTemplateColumns: 'repeat(4, 1fr)' }}>
-          <KPICard label="Total Pago"          value={fmtBRL(pagoItem?.valor ?? 0)} sub={`${pctPago.toFixed(1)}% do total`} accent="emerald"/>
-          <KPICard label="Qtd. PAGO"           value={(pagoItem?.qtd ?? 0).toLocaleString()} accent="emerald"/>
-          <KPICard label="Desvio Apont. vs Pago" value={devApPago  !== null ? `${devApPago.toFixed(1)}%`  : '—'} accent={devColor(devApPago)}/>
-          <KPICard label="Desvio Orç. vs Pago"   value={devOrcPago !== null ? `${devOrcPago.toFixed(1)}%` : '—'} accent={devColor(devOrcPago)}/>
+          <KPICard label="Total Pago"             value={fmtBRL(pagoItem?.valor ?? 0)} sub={`${pctPago.toFixed(1)}% do total`} accent="emerald"/>
+          <KPICard label="Qtd. PAGO"              value={(pagoItem?.qtd ?? 0).toLocaleString()} accent="emerald"/>
+          <KPICard label="Desvio Apont. vs Pago"  value={devApPago  !== null ? `${devApPago.toFixed(1)}%`  : '—'} accent={devColor(devApPago)}/>
+          <KPICard label="Desvio Orç. vs Pago"    value={devOrcPago !== null ? `${devOrcPago.toFixed(1)}%` : '—'} accent={devColor(devOrcPago)}/>
         </div>
 
         <div style={{ ...G, gridTemplateColumns: '1fr 2fr' }}>
           <ChartCard title="Distribuição por Status" subtitle="% do valor total">
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={260}>
               <PieChart>
-                <Pie data={statusBkdn} dataKey="valor" nameKey="status" cx="50%" cy="50%" innerRadius={50} outerRadius={80} strokeWidth={0}>
+                <Pie
+                  data={statusBkdn} dataKey="valor" nameKey="status"
+                  cx="50%" cy="50%" innerRadius={50} outerRadius={85} strokeWidth={0}
+                  labelLine={false} label={<PieLabel/>}
+                >
                   {statusBkdn.map((s,i) => <Cell key={s.status} fill={STATUS_COLORS[s.status] ?? CHART_PALETTE[i%CHART_PALETTE.length]}/>)}
                 </Pie>
                 <Tooltip content={<CustomTooltip/>}/>
@@ -74,37 +114,42 @@ export default function Pagamento() {
           </ChartCard>
 
           <ChartCard title="Valor por Janela de Pagamento" subtitle="Total pago por mês">
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={porJanela} margin={{top:4,right:8,left:0,bottom:0}}>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={porJanela} margin={{top:24,right:8,left:0,bottom:0}}>
                 <XAxis dataKey="label" tick={{fill:'#94A3B8',fontSize:11}} axisLine={false} tickLine={false}/>
                 <YAxis tickFormatter={v=>`${(v/1e6).toFixed(1)}M`} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
                 <Tooltip content={<CustomTooltip/>}/>
-                <Bar dataKey="valor" name="Valor Pago" fill="#10B981" radius={[4,4,0,0]}/>
+                <Bar dataKey="valor" name="Valor Pago" fill="#10B981" radius={[4,4,0,0]}>
+                  <LabelList content={<BarLabel/>}/>
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
         </div>
 
         <ChartCard title="Desvios Financeiros por Tipo" subtitle="% diferença média">
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={desviosPorTipo} margin={{top:4,right:8,left:0,bottom:0}}>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={desviosPorTipo} margin={{top:28,right:8,left:0,bottom:0}}>
               <XAxis dataKey="name" tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
               <YAxis unit="%" tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
               <Tooltip content={<CustomTooltip currency={false}/>}/>
-              <Bar dataKey="desvioApVsPago"  name="Apontado vs Pago" fill="#6366F1" radius={[4,4,0,0]}/>
-              <Bar dataKey="desvioOrcVsPago" name="Orçado vs Pago"   fill="#F59E0B" radius={[4,4,0,0]}/>
+              <Bar dataKey="desvioApVsPago"  name="Apontado vs Pago" fill="#6366F1" radius={[4,4,0,0]}>
+                <LabelList content={<DesvioLabel/>}/>
+              </Bar>
+              <Bar dataKey="desvioOrcVsPago" name="Orçado vs Pago"   fill="#F59E0B" radius={[4,4,0,0]}>
+                <LabelList content={<DesvioLabel/>}/>
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
 
-        {/* Tabela */}
         <ChartCard title="Detalhamento por Status">
           <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
             <thead>
               <tr style={{color:'#94A3B8',fontSize:10,textTransform:'uppercase',letterSpacing:'.05em'}}>
                 <th style={{textAlign:'left', padding:'8px 12px 8px 0',fontWeight:500}}>Status</th>
-                <th style={{textAlign:'right',padding:'8px 12px',       fontWeight:500}}>Qtd.</th>
-                <th style={{textAlign:'right',padding:'8px 0 8px 12px', fontWeight:500}}>Valor Total</th>
+                <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>Qtd.</th>
+                <th style={{textAlign:'right',padding:'8px 0 8px 12px',fontWeight:500}}>Valor Total</th>
               </tr>
             </thead>
             <tbody>
@@ -131,7 +176,6 @@ export default function Pagamento() {
           </table>
         </ChartCard>
 
-        {/* Gargalos */}
         {(() => {
           const gargalos = statusBkdn.filter(s => s.status !== 'PAGO' && s.valor > 0)
           if (!gargalos.length) return null
