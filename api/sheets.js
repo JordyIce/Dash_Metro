@@ -15,7 +15,13 @@ function parseCSVLine(line) {
 
 function parseCSVRaw(text) {
   return text.split('\n').map(l => l.replace(/\r$/, '')).filter(l => l.trim())
-    .map(parseCSVLine).map(row => row.map(v => v.trim()))
+    .map(parseCSVLine)
+    .map(row => {
+      const trimmed = row.map(v => v.trim())
+      // Pad to 39 columns so trailing empty cells never cause index misses
+      while (trimmed.length < 39) trimmed.push('')
+      return trimmed
+    })
 }
 
 // ── Value helpers ─────────────────────────────────────────────────────────────
@@ -46,7 +52,6 @@ function parseDate(s) {
 // [11]DATA_ENVIO [12]VL_APONTADO [13]DATA_VALIDACAO [14]JANELA_ENVIO
 // [15]VL_PAGO [17]JANELA_PAG [19]STATUS
 function normalizeParcial(row, idx) {
-  if (row.length < 20) return null
   const sgm = row[2], ot = row[3], id = sgm || ot
   const status = row[19]
   if (!id || !status) return null
@@ -73,7 +78,6 @@ function normalizeParcial(row, idx) {
 // [18]VL_ORCADO [19]VL_APONTADO [20]DATA_UV [21]JANELA_ENVIO [22]VL_PAGO
 // [24]JANELA_PAG [25]QTD_POSTE [26]QTD_KLC [35]STATUS
 function normalizeManutencao(row, fonte, idx) {
-  if (row.length < 36) return null
   const sgm = row[2], ot = row[3], id = sgm || ot
   const status = row[35]
   if (!id || !status) return null
@@ -99,7 +103,6 @@ function normalizeManutencao(row, fonte, idx) {
 
 // MANUTENÇÃO LINHA VIVA (39 colunas — [3] = N° INCIDÊNCIA):
 function normalizeLinhaViva(row, idx) {
-  if (row.length < 36) return null
   const sgm = row[2], ot = row[3], id = sgm || ot
   const status = row[35]
   if (!id || !status) return null
@@ -131,12 +134,11 @@ function normalizeLinhaViva(row, idx) {
 // [24]JANELA_PAG [25]QTD_POSTE [26]QTD_KLC [36]STATUS (deslocado +1)
 function normalizeConstrucao(row, idx) {
   // Aceita linhas com pelo menos 23 colunas (até VALOR PAGO)
-  if (row.length < 23) return null
   const lcl = row[2], ot = row[3]
   // Usa OT ou LCL como ID; se ambos vazios, gera ID pelo índice para não perder o registro
   const id = lcl || ot || `CONSTR-${idx}`
   // STATUS pode estar em [36] (38 cols) ou [35] (37 cols) — pega o que tiver
-  const status = (row.length >= 37 ? row[36] : null) || (row.length >= 36 ? row[35] : null) || ''
+  const status = row[36] || row[35] || ''
   if (!status) return null
   return {
     _id: `CONSTRUCAO-METRO-${idx}`, idExecucao: id, sgm: lcl, ot,
@@ -161,7 +163,6 @@ function normalizeConstrucao(row, idx) {
 
 // META FATURAMENTO: [0]JANELA [1]META_MANUT [2]META_CONST [3]META_TOTAL
 function normalizeMeta(row) {
-  if (row.length < 4) return null
   const janela = parseDate(row[0])
   if (!janela) return null
   return {
