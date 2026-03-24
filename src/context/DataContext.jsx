@@ -2,7 +2,12 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 
 const Ctx = createContext(null)
 
-const EMPTY = { tipoExecucao: [], statusPagamento: [], janelaEnvio: [], janelaPagamento: [] }
+const EMPTY = {
+  tipoExecucao:    [],
+  statusPagamento: [],
+  dateFrom:        '',   // ISO YYYY-MM-DD
+  dateTo:          '',   // ISO ISO YYYY-MM-DD
+}
 
 export function DataProvider({ children }) {
   const [data,    setData]    = useState(null)
