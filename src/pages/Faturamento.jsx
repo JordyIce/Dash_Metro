@@ -1,18 +1,40 @@
 import { useMemo } from 'react'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
-import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts'
+import {
+  ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  CartesianGrid, ReferenceLine, LabelList
+} from 'recharts'
 import { useData } from '../context/DataContext'
 import { applyFilters, fmtBRL, fmtDate, faturamentoPorJanela, acumuladoFaturamento, metaVsReal } from '../lib/metrics'
 import { KPICard, ChartCard, PageHeader, LoadingState, ErrorState, CustomTooltip } from '../components/UI'
 
 const G = { display: 'grid', gap: 16 }
 
+function BarLabel({ x, y, width, value }) {
+  if (!value || value === 0) return null
+  const label = value >= 1e6 ? `${(value/1e6).toFixed(1)}M` : `${(value/1e3).toFixed(0)}k`
+  return (
+    <text x={x + width / 2} y={y - 5} fill="#94A3B8" textAnchor="middle" fontSize={10} fontFamily="'IBM Plex Mono', monospace">
+      {label}
+    </text>
+  )
+}
+
+function PctLabel({ x, y, width, value }) {
+  if (!value || value === 0) return null
+  return (
+    <text x={x + width / 2} y={y - 5} fill="#F59E0B" textAnchor="middle" fontSize={10} fontFamily="'IBM Plex Mono', monospace" fontWeight={600}>
+      {`${value.toFixed(0)}%`}
+    </text>
+  )
+}
+
 export default function Faturamento() {
   const { data, loading, error, filters, refresh } = useData()
   const execs = useMemo(() => data ? applyFilters(data.execucoes, filters) : [], [data, filters])
 
   const fatJanela = useMemo(() => faturamentoPorJanela(execs), [execs])
-  const acum      = useMemo(() => acumuladoFaturamento(execs),  [execs])
+  const acum      = useMemo(() => acumuladoFaturamento(execs), [execs])
   const mvr       = useMemo(() => data ? metaVsReal(execs, data.metas) : [], [execs, data])
 
   const lineData = useMemo(() =>
@@ -36,38 +58,47 @@ export default function Faturamento() {
       <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
         <div style={{ ...G, gridTemplateColumns: 'repeat(4, 1fr)' }}>
-          <KPICard label="Total Faturado"    value={fmtBRL(totalPago)}  accent="emerald" trend={trend !== null ? {value: trend, label: 'vs mês anterior'} : undefined}/>
+          <KPICard label="Total Faturado"    value={fmtBRL(totalPago)}  accent="emerald" trend={trend !== null ? {value:trend, label:'vs mês anterior'} : undefined}/>
           <KPICard label="Total Apontado"    value={fmtBRL(totalApont)} accent="indigo"/>
           <KPICard label="Melhor Janela"     value={best ? fmtBRL(best.valorPago) : '—'} sub={best?.label} accent="amber"/>
           <KPICard label="Janelas com Dados" value={fatJanela.length.toString()} accent="muted"/>
         </div>
 
         <ChartCard title="Evolução do Faturamento" subtitle="Valor pago por janela + curva acumulada">
-          <ResponsiveContainer width="100%" height={300}>
-            <ComposedChart data={lineData} margin={{top:8,right:20,left:0,bottom:0}}>
+          <ResponsiveContainer width="100%" height={320}>
+            <ComposedChart data={lineData} margin={{top:28,right:20,left:0,bottom:0}}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1C2340" vertical={false}/>
               <XAxis dataKey="label" tick={{fill:'#94A3B8',fontSize:11}} axisLine={false} tickLine={false}/>
               <YAxis yAxisId="bar"  tickFormatter={v=>`${(v/1e6).toFixed(1)}M`} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
               <YAxis yAxisId="line" orientation="right" tickFormatter={v=>`${(v/1e6).toFixed(1)}M`} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
               <Tooltip content={<CustomTooltip/>}/>
-              <Bar  yAxisId="bar"  dataKey="valorPago" name="Valor Pago" fill="#F59E0B" radius={[4,4,0,0]} opacity={0.85}/>
-              <Line yAxisId="line" dataKey="acumulado" name="Acumulado"  stroke="#6366F1" strokeWidth={2} dot={false}/>
+              <Bar yAxisId="bar" dataKey="valorPago" name="Valor Pago" fill="#F59E0B" radius={[4,4,0,0]} opacity={0.85}>
+                <LabelList content={<BarLabel/>} />
+              </Bar>
+              <Line yAxisId="line" dataKey="acumulado" name="Acumulado" stroke="#6366F1" strokeWidth={2} dot={{fill:'#6366F1',r:3}}/>
             </ComposedChart>
           </ResponsiveContainer>
         </ChartCard>
 
         <ChartCard title="Faturamento vs Meta" subtitle="Realizado × meta × % atingimento">
-          <ResponsiveContainer width="100%" height={280}>
-            <ComposedChart data={mvr} margin={{top:8,right:20,left:0,bottom:0}}>
+          <ResponsiveContainer width="100%" height={300}>
+            <ComposedChart data={mvr} margin={{top:28,right:60,left:0,bottom:0}}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1C2340" vertical={false}/>
               <XAxis dataKey="label" tick={{fill:'#94A3B8',fontSize:11}} axisLine={false} tickLine={false}/>
               <YAxis yAxisId="bar" tickFormatter={v=>`${(v/1e6).toFixed(1)}M`} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
               <YAxis yAxisId="pct" orientation="right" tickFormatter={v=>`${v.toFixed(0)}%`} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
               <ReferenceLine yAxisId="pct" y={100} stroke="#10B981" strokeDasharray="4 4" strokeWidth={1}/>
               <Tooltip content={<CustomTooltip/>}/>
-              <Bar  yAxisId="bar" dataKey="real" name="Realizado"    fill="#10B981" radius={[4,4,0,0]}/>
-              <Bar  yAxisId="bar" dataKey="meta" name="Meta"         fill="#1C2340" radius={[4,4,0,0]}/>
-              <Line yAxisId="pct" dataKey="pct"  name="% Atingimento" stroke="#F59E0B" strokeWidth={2} dot={{fill:'#F59E0B',r:3}}/>
+              <Bar yAxisId="bar" dataKey="real" name="Realizado" fill="#10B981" radius={[4,4,0,0]}>
+                <LabelList content={<BarLabel/>} />
+              </Bar>
+              <Bar yAxisId="bar" dataKey="meta" name="Meta" fill="#1C2340" radius={[4,4,0,0]}>
+                <LabelList content={<BarLabel/>} />
+              </Bar>
+              <Line yAxisId="pct" dataKey="pct" name="% Atingimento" stroke="#F59E0B" strokeWidth={2} dot={{fill:'#F59E0B',r:4}}>
+                <LabelList dataKey="pct" position="top" formatter={v=>`${v.toFixed(0)}%`}
+                  style={{fill:'#F59E0B',fontSize:10,fontFamily:"'IBM Plex Mono',monospace",fontWeight:600}}/>
+              </Line>
             </ComposedChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -78,11 +109,11 @@ export default function Faturamento() {
             <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
               <thead>
                 <tr style={{color:'#94A3B8',fontSize:10,textTransform:'uppercase',letterSpacing:'.05em'}}>
-                  <th style={{textAlign:'left',  padding:'8px 12px 8px 0',fontWeight:500}}>Janela</th>
-                  <th style={{textAlign:'right', padding:'8px 12px',       fontWeight:500}}>Apontado</th>
-                  <th style={{textAlign:'right', padding:'8px 12px',       fontWeight:500}}>Pago</th>
-                  <th style={{textAlign:'right', padding:'8px 12px',       fontWeight:500}}>Meta</th>
-                  <th style={{textAlign:'right', padding:'8px 0 8px 12px', fontWeight:500}}>% Meta</th>
+                  <th style={{textAlign:'left', padding:'8px 12px 8px 0',fontWeight:500}}>Janela</th>
+                  <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>Apontado</th>
+                  <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>Pago</th>
+                  <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>Meta</th>
+                  <th style={{textAlign:'right',padding:'8px 0 8px 12px',fontWeight:500}}>% Meta</th>
                 </tr>
               </thead>
               <tbody>
@@ -106,7 +137,7 @@ export default function Faturamento() {
                 })}
               </tbody>
             </table>
-            {mvr.length === 0 && <p style={{textAlign:'center',color:'#94A3B8',padding:32}}>Sem dados de faturamento</p>}
+            {mvr.length === 0 && <p style={{textAlign:'center',color:'#94A3B8',padding:32}}>Sem dados</p>}
           </div>
         </ChartCard>
 
