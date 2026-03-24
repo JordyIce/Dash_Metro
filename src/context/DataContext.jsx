@@ -5,8 +5,10 @@ const Ctx = createContext(null)
 const EMPTY = {
   tipoExecucao:    [],
   statusPagamento: [],
-  dateFrom:        '',   // ISO YYYY-MM-DD
-  dateTo:          '',   // ISO ISO YYYY-MM-DD
+  dateFrom:        '',   // janela de envio — de
+  dateTo:          '',   // janela de envio — até
+  payFrom:         '',   // janela de pagamento — de
+  payTo:           '',   // janela de pagamento — até
 }
 
 export function DataProvider({ children }) {
