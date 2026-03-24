@@ -25,10 +25,18 @@ export function diffDays(a, b) {
 // ── Filtros ───────────────────────────────────────────────────────────────────
 export function applyFilters(data, filters) {
   return data.filter(e => {
-    if (filters.tipoExecucao?.length   && !filters.tipoExecucao.includes(e.tipoExecucao))     return false
+    if (filters.tipoExecucao?.length    && !filters.tipoExecucao.includes(e.tipoExecucao))      return false
     if (filters.statusPagamento?.length && !filters.statusPagamento.includes(e.statusPagamento)) return false
-    if (filters.janelaEnvio?.length    && !filters.janelaEnvio.includes(e.janelaEnvio))       return false
-    if (filters.janelaPagamento?.length && !filters.janelaPagamento.includes(e.janelaPagamento)) return false
+
+    // Filtro de período — filtra por janelaEnvio (ou dataApontamento como fallback)
+    const refDate = e.janelaEnvio || e.dataApontamento
+    if (filters.dateFrom && refDate) {
+      if (refDate < filters.dateFrom) return false
+    }
+    if (filters.dateTo && refDate) {
+      if (refDate > filters.dateTo) return false
+    }
+
     return true
   })
 }
@@ -47,22 +55,13 @@ export function groupBy(data, key, valueKey) {
   return [...map.entries()].map(([name, value]) => ({ name, value }))
 }
 
-export function groupByCount(data, key) {
-  const map = new Map()
-  for (const e of data) {
-    const k = e[key] || 'N/A'
-    map.set(k, (map.get(k) ?? 0) + 1)
-  }
-  return [...map.entries()].map(([name, value]) => ({ name, value }))
-}
-
 // ── SLA ───────────────────────────────────────────────────────────────────────
 export function slaApontamento(e) { return diffDays(e.dataEnergizacao, e.dataApontamento) }
 export function slaValidacao(e)   { return diffDays(e.janelaEnvio,     e.janelaPagamento) }
 export function slaLiquidacao(e)  { return diffDays(e.dataApontamento, e.dataLiquidacao)  }
 
 export function avgSLA(data, fn) {
-  const vals = data.map(fn).filter(v => v !== null)
+  const vals = data.map(fn).filter(v => v !== null && v >= 0)
   if (!vals.length) return null
   return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)
 }
@@ -76,8 +75,24 @@ export function slaPorTipo(data) {
       slaApontamento: avgSLA(sub, slaApontamento),
       slaValidacao:   avgSLA(sub, slaValidacao),
       slaLiquidacao:  avgSLA(sub, slaLiquidacao),
+      countAp:  sub.filter(e => slaApontamento(e) !== null).length,
+      countVal: sub.filter(e => slaValidacao(e)   !== null).length,
+      countLiq: sub.filter(e => slaLiquidacao(e)  !== null).length,
     }
   })
+}
+
+// Distribuição de SLA para histograma
+export function slaDistribuicao(data, fn, buckets = [0,7,15,30,60,9999]) {
+  const vals = data.map(fn).filter(v => v !== null && v >= 0)
+  const labels = ['0-7d', '8-15d', '16-30d', '31-60d', '60d+']
+  const counts = new Array(labels.length).fill(0)
+  vals.forEach(v => {
+    for (let i = 0; i < buckets.length - 1; i++) {
+      if (v >= buckets[i] && v < buckets[i+1]) { counts[i]++; break }
+    }
+  })
+  return labels.map((label, i) => ({ label, count: counts[i] }))
 }
 
 // ── Faturamento ───────────────────────────────────────────────────────────────
@@ -102,7 +117,7 @@ export function acumuladoFaturamento(data) {
 }
 
 export function metaVsReal(data, metas) {
-  const fat    = faturamentoPorJanela(data)
+  const fat     = faturamentoPorJanela(data)
   const metaMap = new Map(metas.map(m => [m.janela, m.metaTotal]))
   return fat.map(f => {
     const meta = metaMap.get(f.janela) ?? 0
