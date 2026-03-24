@@ -7,6 +7,7 @@ const ABAS = [
   { nome: 'MANUTENÇÃO PESADA',     gid: '189511042',  tipo: 'manutencao' },
   { nome: 'MANUTENÇÃO LINHA VIVA', gid: '444956809',  tipo: 'manutencao' },
   { nome: 'MEDIÇÃO GRÁFICA',       gid: '889068289',  tipo: 'manutencao' },
+  { nome: 'CONSTRUÇÃO - Metro',    gid: '584650671',  tipo: 'construcao'  },
 ]
 const GID_META = '137800100'
 
