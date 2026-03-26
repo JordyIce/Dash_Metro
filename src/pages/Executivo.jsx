@@ -5,7 +5,7 @@ import {
   PieChart, Pie, Cell, Legend, LabelList
 } from 'recharts'
 import { useData } from '../context/DataContext'
-import { applyFilters, sumField, fmtBRL, faturamentoPorJanela, statusBreakdown, topMunicipios, metaVsReal } from '../lib/metrics'
+import { applyFilters, sumField, fmtBRL, faturamentoPorJanela, statusBreakdown, topMunicipios, metaVsReal, metaParaTipos } from '../lib/metrics'
 import { STATUS_COLORS, TIPO_COLORS, CHART_PALETTE } from '../lib/constants'
 import { KPICard, ChartCard, PageHeader, LoadingState, ErrorState, CustomTooltip } from '../components/UI'
 
@@ -97,12 +97,13 @@ export default function Executivo() {
     return data.metas.find(m => m.janela === key) ?? data.metas[data.metas.length - 1]
   }, [data])
 
-  const pctMeta = metaAtual?.metaTotal > 0 ? (totalPago / metaAtual.metaTotal) * 100 : null
+  const metaFiltrada = useMemo(() => metaParaTipos(metaAtual, filters.tipoExecucao), [metaAtual, filters.tipoExecucao])
+  const pctMeta = metaFiltrada > 0 ? (totalPago / metaFiltrada) * 100 : null
 
   const fatJanela  = useMemo(() => faturamentoPorJanela(execs).slice(-12), [execs])
   const statusBkdn = useMemo(() => statusBreakdown(execs), [execs])
   const topMuni    = useMemo(() => topMunicipios(execs, 8), [execs])
-  const mvr        = useMemo(() => data ? metaVsReal(execs, data.metas).slice(-6) : [], [execs, data])
+  const mvr        = useMemo(() => data ? metaVsReal(execs, data.metas, filters.tipoExecucao).slice(-6) : [], [execs, data, filters.tipoExecucao])
 
   const porTipo = useMemo(() => {
     const map = new Map()
@@ -130,7 +131,7 @@ export default function Executivo() {
           <KPICard compact
             label="% Ating. Meta"
             value={pctMeta !== null ? `${pctMeta.toFixed(1)}%` : '—'}
-            sub={metaAtual ? `Meta: ${fmtBRL(metaAtual.metaTotal)}` : undefined}
+            sub={metaAtual ? `Meta: ${fmtBRL(metaFiltrada)}` : undefined}
             icon={<Hash size={13}/>}
             accent={metaColor}
           />
