@@ -63,8 +63,9 @@ export function groupBy(data, key, valueKey) {
 
 // ── SLA ───────────────────────────────────────────────────────────────────────
 export function slaApontamento(e) { return diffDays(e.dataEnergizacao, e.dataApontamento) }
-export function slaValidacao(e)   { return diffDays(e.janelaEnvio,     e.janelaPagamento) }
-export function slaLiquidacao(e)  { return diffDays(e.dataApontamento, e.dataLiquidacao)  }
+export function slaValidacao(e)   { return diffDays(e.dataUF,          e.dataUV)           }  // Data de UF → Data de UV
+export function slaLiquidacao(e)  { return diffDays(e.dataApontamento, e.dataLiquidacao)   }
+export function slaSetup(e)       { return diffDays(e.dataEnergizacao, e.janelaPagamento)  }  // Data de Energização → Janela de Pagamento
 
 export function avgSLA(data, fn) {
   const vals = data.map(fn).filter(v => v !== null && v >= 0)
@@ -81,9 +82,11 @@ export function slaPorTipo(data) {
       slaApontamento: avgSLA(sub, slaApontamento),
       slaValidacao:   avgSLA(sub, slaValidacao),
       slaLiquidacao:  avgSLA(sub, slaLiquidacao),
+      slaSetup:       avgSLA(sub, slaSetup),
       countAp:  sub.filter(e => slaApontamento(e) !== null).length,
       countVal: sub.filter(e => slaValidacao(e)   !== null).length,
       countLiq: sub.filter(e => slaLiquidacao(e)  !== null).length,
+      countSet: sub.filter(e => slaSetup(e)       !== null).length,
     }
   })
 }
