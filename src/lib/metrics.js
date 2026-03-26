@@ -122,11 +122,33 @@ export function acumuladoFaturamento(data) {
   return fat.map(f => { acc += f.valorPago; return { label: f.label, acumulado: acc } })
 }
 
-export function metaVsReal(data, metas) {
+// Mapeia tipoExecucao para o campo de meta correspondente
+const TIPO_META_FIELD = {
+  'CONSTRUÇÃO':              'metaConstrucao',
+  'PARCIAL':                 'metaParcial',
+  'MANUTENÇÃO PREVENTIVA':   'metaManutencaoPreventiva',
+  'MANUTENÇÃO PESADA':       'metaManutencaoPesada',
+  'MANUTENÇÃO LINHA VIVA':   'metaLinhaViva',
+  'MEDIÇÃO GRÁFICA':         'metaMedicaoGrafica',
+}
+
+// Retorna o valor de meta correto de um objeto meta dado um filtro de tipos.
+// Sem filtro → metaTotal. Um ou mais tipos → soma das metas individuais.
+export function metaParaTipos(metaObj, tiposFiltro = []) {
+  if (!metaObj) return 0
+  if (!tiposFiltro.length) return metaObj.metaTotal ?? 0
+  return tiposFiltro.reduce((acc, tipo) => {
+    const field = TIPO_META_FIELD[tipo]
+    return acc + (field ? (metaObj[field] ?? 0) : 0)
+  }, 0)
+}
+
+export function metaVsReal(data, metas, tiposFiltro = []) {
   const fat     = faturamentoPorJanela(data)
-  const metaMap = new Map(metas.map(m => [m.janela, m.metaTotal]))
+  const metaMap = new Map(metas.map(m => [m.janela, m]))
   return fat.map(f => {
-    const meta = metaMap.get(f.janela) ?? 0
+    const metaObj = metaMap.get(f.janela)
+    const meta    = metaParaTipos(metaObj, tiposFiltro)
     return { label: f.label, janela: f.janela, real: f.valorPago, meta, pct: meta > 0 ? (f.valorPago / meta) * 100 : 0 }
   })
 }
