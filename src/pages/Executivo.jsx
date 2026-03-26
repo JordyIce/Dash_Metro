@@ -5,7 +5,7 @@ import {
   PieChart, Pie, Cell, Legend, LabelList
 } from 'recharts'
 import { useData } from '../context/DataContext'
-import { applyFilters, sumField, fmtBRL, faturamentoPorJanela, statusBreakdown, topMunicipios, metaVsReal, metaParaTipos } from '../lib/metrics'
+import { applyFilters, sumField, fmtBRL, faturamentoPorJanela, statusBreakdown, topMunicipios, metaVsReal, metaParaTipos, somarMetas } from '../lib/metrics'
 import { STATUS_COLORS, TIPO_COLORS, CHART_PALETTE } from '../lib/constants'
 import { KPICard, ChartCard, PageHeader, LoadingState, ErrorState, CustomTooltip } from '../components/UI'
 
@@ -90,14 +90,17 @@ export default function Executivo() {
   const qtdObras      = useMemo(() => new Set(execs.map(e => e.idExecucao)).size, [execs])
   const qtdMunis      = useMemo(() => new Set(execs.map(e => e.municipio).filter(Boolean)).size, [execs])
 
-  const metaAtual = useMemo(() => {
-    if (!data?.metas?.length) return null
-    const now = new Date()
-    const key = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`
-    return data.metas.find(m => m.janela === key) ?? data.metas[data.metas.length - 1]
-  }, [data])
+  // Meta acumulada: soma os meses dentro do filtro de data ativo.
+  // Sem filtro → soma todos os meses disponíveis na planilha.
+  // O intervalo usa dateFrom/dateTo (janela de envio) como referência principal;
+  // cai para payFrom/payTo se apenas o filtro de pagamento estiver ativo.
+  const metaFiltrada = useMemo(() => {
+    if (!data?.metas?.length) return 0
+    const from = filters.dateFrom || filters.payFrom || ''
+    const to   = filters.dateTo   || filters.payTo   || ''
+    return somarMetas(data.metas, from, to, filters.tipoExecucao)
+  }, [data, filters.dateFrom, filters.dateTo, filters.payFrom, filters.payTo, filters.tipoExecucao])
 
-  const metaFiltrada = useMemo(() => metaParaTipos(metaAtual, filters.tipoExecucao), [metaAtual, filters.tipoExecucao])
   const pctMeta = metaFiltrada > 0 ? (totalPago / metaFiltrada) * 100 : null
 
   const fatJanela  = useMemo(() => faturamentoPorJanela(execs).slice(-12), [execs])
@@ -111,7 +114,7 @@ export default function Executivo() {
     return [...map.entries()].map(([name, value]) => ({ name, value }))
   }, [execs])
 
-  const metaColor = pctMeta === null ? 'muted' : pctMeta >= 90 ? 'emerald' : pctMeta >= 70 ? 'amber' : 'rose'
+  const metaColor = metaFiltrada === 0 ? 'muted' : pctMeta >= 90 ? 'emerald' : pctMeta >= 70 ? 'amber' : 'rose'
 
   if (loading) return <LoadingState />
   if (error)   return <ErrorState message={error} onRetry={refresh} />
@@ -131,7 +134,7 @@ export default function Executivo() {
           <KPICard compact
             label="% Ating. Meta"
             value={pctMeta !== null ? `${pctMeta.toFixed(1)}%` : '—'}
-            sub={metaAtual ? `Meta: ${fmtBRL(metaFiltrada)}` : undefined}
+            sub={metaFiltrada > 0 ? `Meta: ${fmtBRL(metaFiltrada)}` : undefined}
             icon={<Hash size={13}/>}
             accent={metaColor}
           />
