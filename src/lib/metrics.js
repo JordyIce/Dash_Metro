@@ -34,14 +34,23 @@ export function applyFilters(data, filters) {
     if (filters.statusPagamento?.length && !filters.statusPagamento.includes(e.statusPagamento)) return false
 
     // Filtro por janela de envio (dateFrom / dateTo)
+    // Registros sem janelaEnvio usam dataApontamento como fallback.
+    // Se o filtro está ativo e o registro não tem nenhuma das duas datas → excluir.
     const refEnvio = e.janelaEnvio || e.dataApontamento
-    if (filters.dateFrom && refEnvio && refEnvio < filters.dateFrom) return false
-    if (filters.dateTo   && refEnvio && refEnvio > filters.dateTo)   return false
+    if (filters.dateFrom || filters.dateTo) {
+      if (!refEnvio)                                       return false
+      if (filters.dateFrom && refEnvio < filters.dateFrom) return false
+      if (filters.dateTo   && refEnvio > filters.dateTo)   return false
+    }
 
     // Filtro por janela de pagamento (payFrom / payTo)
+    // Se o filtro está ativo e o registro não tem janelaPagamento → excluir.
     const refPag = e.janelaPagamento
-    if (filters.payFrom && refPag && refPag < filters.payFrom) return false
-    if (filters.payTo   && refPag && refPag > filters.payTo)   return false
+    if (filters.payFrom || filters.payTo) {
+      if (!refPag)                                     return false
+      if (filters.payFrom && refPag < filters.payFrom) return false
+      if (filters.payTo   && refPag > filters.payTo)   return false
+    }
 
     return true
   })
