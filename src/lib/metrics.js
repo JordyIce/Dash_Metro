@@ -62,10 +62,18 @@ export function groupBy(data, key, valueKey) {
 }
 
 // ── SLA ───────────────────────────────────────────────────────────────────────
-export function slaApontamento(e) { return diffDays(e.dataEnergizacao, e.dataApontamento) }
-export function slaValidacao(e)   { return diffDays(e.dataUF,          e.dataUV)           }  // Data de UF → Data de UV
-export function slaLiquidacao(e)  { return diffDays(e.dataApontamento, e.dataLiquidacao)   }
-export function slaSetup(e)       { return diffDays(e.dataEnergizacao, e.janelaPagamento)  }  // Data de Energização → Janela de Pagamento
+// Se a data final estiver ausente, usa hoje como fallback.
+// Se a data base estiver ausente, retorna null (sem base não há SLA calculável).
+const TODAY = new Date().toISOString().slice(0, 10)
+function diffDaysOrToday(base, end) {
+  if (!base) return null
+  return diffDays(base, end || TODAY)
+}
+
+export function slaApontamento(e) { return diffDaysOrToday(e.dataEnergizacao, e.dataApontamento) }
+export function slaValidacao(e)   { return diffDaysOrToday(e.dataUF,          e.dataUV)          }
+export function slaLiquidacao(e)  { return diffDaysOrToday(e.dataApontamento, e.dataLiquidacao)  }
+export function slaSetup(e)       { return diffDaysOrToday(e.dataEnergizacao, e.janelaPagamento) }
 
 export function avgSLA(data, fn) {
   const vals = data.map(fn).filter(v => v !== null && v >= 0)
