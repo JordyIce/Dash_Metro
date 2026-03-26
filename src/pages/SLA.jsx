@@ -6,7 +6,7 @@ import {
 } from 'recharts'
 import { useData } from '../context/DataContext'
 import {
-  applyFilters, avgSLA, slaApontamento, slaValidacao, slaLiquidacao,
+  applyFilters, avgSLA, slaApontamento, slaValidacao, slaLiquidacao, slaSetup,
   slaPorTipo, slaDistribuicao, fmtDate
 } from '../lib/metrics'
 import { TIPO_COLORS, CHART_PALETTE } from '../lib/constants'
@@ -56,10 +56,12 @@ export default function SLA() {
   const avgAp  = useMemo(() => avgSLA(execs, slaApontamento), [execs])
   const avgVal = useMemo(() => avgSLA(execs, slaValidacao),   [execs])
   const avgLiq = useMemo(() => avgSLA(execs, slaLiquidacao),  [execs])
+  const avgSet = useMemo(() => avgSLA(execs, slaSetup),       [execs])
 
   const countAp  = useMemo(() => execs.filter(e => slaApontamento(e) !== null).length, [execs])
   const countVal = useMemo(() => execs.filter(e => slaValidacao(e)   !== null).length, [execs])
   const countLiq = useMemo(() => execs.filter(e => slaLiquidacao(e)  !== null).length, [execs])
+  const countSet = useMemo(() => execs.filter(e => slaSetup(e)       !== null).length, [execs])
 
   const porTipo = useMemo(() => slaPorTipo(execs), [execs])
 
@@ -72,10 +74,12 @@ export default function SLA() {
     { subject: 'Apontamento', value: avgAp  ?? 0 },
     { subject: 'Validação',   value: avgVal ?? 0 },
     { subject: 'Liquidação',  value: avgLiq ?? 0 },
+    { subject: 'Setup',       value: avgSet ?? 0 },
   ]
 
   const slaApTipo  = porTipo.filter(t => t.slaApontamento !== null).map(t => ({ name: t.tipo, value: t.slaApontamento, count: t.countAp  })).sort((a,b)=>a.value-b.value)
   const slaValTipo = porTipo.filter(t => t.slaValidacao   !== null).map(t => ({ name: t.tipo, value: t.slaValidacao,   count: t.countVal })).sort((a,b)=>a.value-b.value)
+  const slaSetTipo = porTipo.filter(t => t.slaSetup       !== null).map(t => ({ name: t.tipo, value: t.slaSetup,       count: t.countSet })).sort((a,b)=>a.value-b.value)
 
   if (loading) return <LoadingState />
   if (error)   return <ErrorState message={error} onRetry={refresh} />
@@ -85,16 +89,29 @@ export default function SLA() {
       <PageHeader title="SLA" subtitle="Indicadores de prazo operacional e ciclo de pagamento" />
       <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-        {/* Farois */}
-        <div style={{ ...G, gridTemplateColumns: 'repeat(3, 1fr)' }}>
+        {/* Faróis — 4 colunas */}
+        <div style={{ ...G, gridTemplateColumns: 'repeat(4, 1fr)' }}>
           <SLAFarol label="SLA Médio de Apontamento" value={avgAp}  thresholds={[10, 20]} count={countAp}/>
-          <SLAFarol label="SLA Médio de Validação"   value={avgVal} thresholds={[15, 30]} count={countVal}/>
+          <SLAFarol
+            label="SLA Médio de Validação"
+            value={avgVal}
+            thresholds={[15, 30]}
+            count={countVal}
+            subtitle="Data de UF → Data de UV"
+          />
           <SLAFarol label="SLA Médio de Liquidação"  value={avgLiq} thresholds={[20, 45]} count={countLiq}/>
+          <SLAFarol
+            label="SLA Médio de Setup"
+            value={avgSet}
+            thresholds={[30, 60]}
+            count={countSet}
+            subtitle="Energização → Janela de Pagamento"
+          />
         </div>
 
-        {/* Evolução do SLA de Validação + Radar */}
+        {/* Evolução SLA Validação + Radar */}
         <div style={{ ...G, gridTemplateColumns: '2fr 1fr' }}>
-          <ChartCard title="Evolução do SLA de Validação" subtitle="Média de dias por janela de envio">
+          <ChartCard title="Evolução do SLA de Validação" subtitle="Média de dias por janela de envio (Data de UF → Data de UV)">
             {evolVal.length > 0 ? (
               <ResponsiveContainer width="100%" height={240}>
                 <AreaChart data={evolVal} margin={{top:16,right:16,left:0,bottom:0}}>
@@ -123,7 +140,7 @@ export default function SLA() {
 
           <ChartCard title="Radar SLA Médio" subtitle="Dias por etapa">
             <ResponsiveContainer width="100%" height={240}>
-              <RadarChart cx="50%" cy="50%" outerRadius="72%" data={radarData}>
+              <RadarChart cx="50%" cy="50%" outerRadius="68%" data={radarData}>
                 <PolarGrid stroke="#1C2340"/>
                 <PolarAngleAxis dataKey="subject"
                   tick={({ x, y, payload }) => {
@@ -150,10 +167,13 @@ export default function SLA() {
                 <tr style={{color:'#94A3B8',fontSize:10,textTransform:'uppercase',letterSpacing:'.05em',borderBottom:'1px solid #1C2340'}}>
                   <th style={{textAlign:'left', padding:'8px 12px 8px 0',fontWeight:500}}>Tipo</th>
                   <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>Apontamento</th>
-                  <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>Registros</th>
-                  <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>Validação</th>
-                  <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>Registros</th>
-                  <th style={{textAlign:'right',padding:'8px 0 8px 12px',fontWeight:500}}>Liquidação</th>
+                  <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500,color:'#475569',fontSize:9}}>regs</th>
+                  <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>Validação <span style={{fontSize:9,color:'#475569',fontWeight:400}}>UF→UV</span></th>
+                  <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500,color:'#475569',fontSize:9}}>regs</th>
+                  <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>Liquidação</th>
+                  <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500,color:'#475569',fontSize:9}}>regs</th>
+                  <th style={{textAlign:'right',padding:'8px 0 8px 12px',fontWeight:500}}>Setup <span style={{fontSize:9,color:'#475569',fontWeight:400}}>Energ→JanPag</span></th>
+                  <th style={{textAlign:'right',padding:'8px 0 8px 4px',fontWeight:500,color:'#475569',fontSize:9}}>regs</th>
                 </tr>
               </thead>
               <tbody>
@@ -168,9 +188,14 @@ export default function SLA() {
                       {t.slaValidacao !== null ? `${t.slaValidacao}d` : '—'}
                     </td>
                     <td style={{padding:'10px 12px',textAlign:'right',color:'#475569',fontSize:11}}>{t.countVal}</td>
-                    <td style={{padding:'10px 0 10px 12px',textAlign:'right',fontFamily:"'IBM Plex Mono',monospace",color: t.slaLiquidacao !== null ? '#10B981' : '#475569'}}>
+                    <td style={{padding:'10px 12px',textAlign:'right',fontFamily:"'IBM Plex Mono',monospace",color: t.slaLiquidacao !== null ? '#10B981' : '#475569'}}>
                       {t.slaLiquidacao !== null ? `${t.slaLiquidacao}d` : '—'}
                     </td>
+                    <td style={{padding:'10px 12px',textAlign:'right',color:'#475569',fontSize:11}}>{t.countLiq}</td>
+                    <td style={{padding:'10px 0 10px 12px',textAlign:'right',fontFamily:"'IBM Plex Mono',monospace",color: t.slaSetup !== null ? '#06B6D4' : '#475569'}}>
+                      {t.slaSetup !== null ? `${t.slaSetup}d` : '—'}
+                    </td>
+                    <td style={{padding:'10px 0 10px 4px',textAlign:'right',color:'#475569',fontSize:11}}>{t.countSet}</td>
                   </tr>
                 ))}
               </tbody>
@@ -179,9 +204,9 @@ export default function SLA() {
           </div>
         </ChartCard>
 
-        {/* Distribuição + por tipo barras */}
+        {/* Distribuição Validação + Apontamento por tipo */}
         <div style={{ ...G, gridTemplateColumns: '1fr 1fr' }}>
-          <ChartCard title="Distribuição SLA de Validação" subtitle="Quantidade de registros por faixa de dias">
+          <ChartCard title="Distribuição SLA de Validação" subtitle="Quantidade de registros por faixa de dias (Data de UF → Data de UV)">
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={distVal} margin={{top:24,right:8,left:0,bottom:0}}>
                 <XAxis dataKey="label" tick={{fill:'#94A3B8',fontSize:11}} axisLine={false} tickLine={false}/>
@@ -218,22 +243,40 @@ export default function SLA() {
           </ChartCard>
         </div>
 
-        {/* SLA Validação por tipo */}
-        {slaValTipo.length > 0 && (
-          <ChartCard title="SLA Validação por Tipo" subtitle="Dias: Janela de Envio → Janela de Pagamento">
-            <ResponsiveContainer width="100%" height={Math.max(180, slaValTipo.length * 44)}>
-              <BarChart data={slaValTipo} layout="vertical" margin={{top:0,right:60,left:0,bottom:0}}>
-                <XAxis type="number" unit="d" tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
-                <YAxis type="category" dataKey="name" width={160} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
-                <Tooltip content={<CustomTooltip currency={false}/>}/>
-                <Bar dataKey="value" name="SLA (dias)" radius={[0,4,4,0]}>
-                  <LabelList content={<HBarDiasLabel/>}/>
-                  {slaValTipo.map((t,i) => <Cell key={t.name} fill={TIPO_COLORS[t.name] ?? CHART_PALETTE[i%CHART_PALETTE.length]}/>)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-        )}
+        {/* SLA Validação por tipo + Setup por tipo */}
+        <div style={{ ...G, gridTemplateColumns: '1fr 1fr' }}>
+          {slaValTipo.length > 0 && (
+            <ChartCard title="SLA Validação por Tipo" subtitle="Dias: Data de UF → Data de UV">
+              <ResponsiveContainer width="100%" height={Math.max(180, slaValTipo.length * 44)}>
+                <BarChart data={slaValTipo} layout="vertical" margin={{top:0,right:60,left:0,bottom:0}}>
+                  <XAxis type="number" unit="d" tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
+                  <YAxis type="category" dataKey="name" width={160} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
+                  <Tooltip content={<CustomTooltip currency={false}/>}/>
+                  <Bar dataKey="value" name="SLA (dias)" radius={[0,4,4,0]}>
+                    <LabelList content={<HBarDiasLabel/>}/>
+                    {slaValTipo.map((t,i) => <Cell key={t.name} fill={TIPO_COLORS[t.name] ?? CHART_PALETTE[i%CHART_PALETTE.length]}/>)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          )}
+
+          {slaSetTipo.length > 0 && (
+            <ChartCard title="SLA Setup por Tipo" subtitle="Dias: Energização → Janela de Pagamento">
+              <ResponsiveContainer width="100%" height={Math.max(180, slaSetTipo.length * 44)}>
+                <BarChart data={slaSetTipo} layout="vertical" margin={{top:0,right:60,left:0,bottom:0}}>
+                  <XAxis type="number" unit="d" tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
+                  <YAxis type="category" dataKey="name" width={160} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
+                  <Tooltip content={<CustomTooltip currency={false}/>}/>
+                  <Bar dataKey="value" name="SLA (dias)" fill="#06B6D4" radius={[0,4,4,0]}>
+                    <LabelList content={<HBarDiasLabel/>}/>
+                    {slaSetTipo.map((t,i) => <Cell key={t.name} fill={CHART_PALETTE[i%CHART_PALETTE.length]}/>)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          )}
+        </div>
 
       </div>
     </div>
