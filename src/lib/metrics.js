@@ -146,6 +146,20 @@ export function metaParaTipos(metaObj, tiposFiltro = []) {
   }, 0)
 }
 
+// Soma as metas de todos os meses dentro do intervalo [from, to] (ISO YYYY-MM-DD).
+// Se from/to forem vazios, soma todos os meses disponíveis.
+// tiposFiltro opcional reduz para a soma das metas individuais dos tipos selecionados.
+export function somarMetas(metas, from, to, tiposFiltro = []) {
+  if (!metas?.length) return 0
+  return metas
+    .filter(m => {
+      if (from && m.janela < from) return false
+      if (to   && m.janela > to)   return false
+      return true
+    })
+    .reduce((acc, m) => acc + metaParaTipos(m, tiposFiltro), 0)
+}
+
 export function metaVsReal(data, metas, tiposFiltro = []) {
   const fat     = faturamentoPorJanela(data)
   const metaMap = new Map(metas.map(m => [m.janela, m]))
