@@ -78,7 +78,7 @@ function parseDate(s, ctx) {
 // [17]NÚMERO DE CONFORMIDADE  [18]JANELA DE PAGAMENTO
 // [19]OBSERVAÇÃO  [20]STATUS PAGAMENTO
 function normalizeParcial(row, idx) {
-  const sgm = row[2], ot = row[3], id = sgm || ot || `PARCIAL-IDX-${idx}`
+  const sgm = row[2], ot = row[3], id = ot || sgm || `PARCIAL-IDX-${idx}`
   const status = row[20]   // STATUS PAGAMENTO — era [19] antes de OBSERVAÇÃO ser inserida
   if (!status) return null
   return {
@@ -116,7 +116,7 @@ function normalizeParcial(row, idx) {
 // [FIX #4] normalizeLinhaViva era cópia quase idêntica desta função —
 // removida. Usar normalizeManutencao(r, 'MANUTENÇÃO LINHA VIVA', i).
 function normalizeManutencao(row, fonte, idx) {
-  const sgm = row[2], ot = row[3], id = sgm || ot || `MANUT-IDX-${idx}`
+  const sgm = row[2], ot = row[3], id = ot || sgm || `MANUT-IDX-${idx}`
   const status = row[35]
   if (!status) return null
   return {
@@ -152,7 +152,7 @@ function normalizeManutencao(row, fonte, idx) {
 // [36]STATUS_PAGAMENTO (deslocado +1 pela col DATA_RETIRADA em [32])
 // fallback row[35] para linhas sem DATA_RETIRADA
 function normalizeConstrucao(row, idx) {
-  const lcl = row[2], ot = row[3], id = lcl || ot || `CONSTR-IDX-${idx}`
+  const lcl = row[2], ot = row[3], id = ot || lcl || `CONSTR-IDX-${idx}`
   const status = row[36] || row[35]
   if (!status) return null
   return {
