@@ -91,7 +91,7 @@ export default function SLA() {
 
         {/* Faróis — 4 colunas */}
         <div style={{ ...G, gridTemplateColumns: 'repeat(4, 1fr)' }}>
-          <SLAFarol label="SLA Médio de Apontamento" value={avgAp}  thresholds={[10, 20]} count={countAp}/>
+          <SLAFarol label="SLA Médio de Apontamento" value={avgAp}  thresholds={[10, 20]} count={countAp}  subtitle="Energização → Data de Apontamento"/>
           <SLAFarol
             label="SLA Médio de Validação"
             value={avgVal}
@@ -99,7 +99,7 @@ export default function SLA() {
             count={countVal}
             subtitle="Data de UF → Data de UV"
           />
-          <SLAFarol label="SLA Médio de Liquidação"  value={avgLiq} thresholds={[20, 45]} count={countLiq}/>
+          <SLAFarol label="SLA Médio de Liquidação"  value={avgLiq} thresholds={[20, 45]} count={countLiq} subtitle="Data de Apontamento → Data de Liquidação"/>
           <SLAFarol
             label="SLA Médio de Setup"
             value={avgSet}
