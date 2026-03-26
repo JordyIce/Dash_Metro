@@ -69,39 +69,37 @@ function parseDate(s, ctx) {
 // ── Normalizers (posicionais) ─────────────────────────────────────────────────
 
 // PARCIAL (20 colunas):
-// [0]TIPO [1]REGIONAL [2]LCL/OS [3]OT [4]SISTEMA [5]MUNICÍPIO
-// [6]WORKFLOW_STATUS  ← era comentado incorretamente como ESTADO
-// [11]DATA_ENVIO [12]VL_APONTADO [13]DATA_VALIDACAO [14]JANELA_ENVIO
-// [15]VL_PAGO [17]JANELA_PAG [19]STATUS_PAGAMENTO
-//
-// [FIX #3] PARCIAL não tem coluna DATA_UF — row[13] é DATA_VALIDACAO,
-// não dataUF. Campo renomeado para dataValidacao; dataUF permanece null.
-// Se o front-end usa dataUF de registros PARCIAL, ajustar os consumers.
+// PARCIAL — layout atual confirmado via debug (colunas adicionadas após [6]):
+// [0]TIPO  [1]REGIONAL  [2]LCL/OS  [3]OT  [4]SISTEMA  [5]MUNICÍPIO
+// [6]WORKFLOW_STATUS (ESTADO: VALIDADO / PENDENTE / etc.)
+// [7]TAREFA  [8]CERTIFICAÇÃO  [9]CONTRATO  [10]RESPONSÁVEL POR ENVIO
+// [11]DATA DE APONTAMENTO  [12]DATA DE UF  [13]VALOR APONTADO
+// [14]DATA DE UV  [15]JANELA DE ENVIO  [16]VALOR PAGO
+// [17]NÚMERO DE CONFORMIDADE  [18]JANELA DE PAGAMENTO
+// [19]OBSERVAÇÃO  [20]STATUS PAGAMENTO
 function normalizeParcial(row, idx) {
   const sgm = row[2], ot = row[3], id = sgm || ot || `PARCIAL-IDX-${idx}`
-  const status = row[19]
+  const status = row[20]   // STATUS PAGAMENTO — era [19] antes de OBSERVAÇÃO ser inserida
   if (!status) return null
   return {
-    // [FIX #7] idx agora é o contador sequencial de registros carregados
     _id: `PARCIAL-${idx}`,
     idExecucao: id, sgm, ot,
     tipoExecucao: row[0] || 'PARCIAL',
     regional: row[1] || '',
     municipio: row[5] || '',
     sistema: row[4] || '',
-    // [FIX #2] row[6] é WORKFLOW_STATUS nesta aba (comentário anterior dizia ESTADO)
     workflowStatus:  row[6] || '',
     dataEnergizacao: null,
     dataApontamento: parseDate(row[11], 'PARCIAL.dataApontamento'),
-    dataUF:          null,
-    dataValidacao:   parseDate(row[13], 'PARCIAL.dataValidacao'),
-    dataUV:          null,
+    dataUF:          parseDate(row[12], 'PARCIAL.dataUF'),
+    dataValidacao:   parseDate(row[12], 'PARCIAL.dataValidacao'),
+    dataUV:          parseDate(row[14], 'PARCIAL.dataUV'),
     dataLiquidacao:  null,
-    janelaEnvio:     parseDate(row[14], 'PARCIAL.janelaEnvio'),
-    janelaPagamento: parseDate(row[17], 'PARCIAL.janelaPagamento'),
+    janelaEnvio:     parseDate(row[15], 'PARCIAL.janelaEnvio'),
+    janelaPagamento: parseDate(row[18], 'PARCIAL.janelaPagamento'),
     valorOrcado: 0,
-    valorApontado: parseBRL(row[12]),
-    valorPago:     parseBRL(row[15]),
+    valorApontado: parseBRL(row[13]),
+    valorPago:     parseBRL(row[16]),
     qtdPoste: 0, qtdKLC: 0,
     statusPagamento: status,
     fonte: 'PARCIAL',
@@ -182,15 +180,21 @@ function normalizeConstrucao(row, idx) {
   }
 }
 
-// META FATURAMENTO: [0]JANELA [1]META_MANUT [2]META_CONST [3]META_TOTAL
+// META FATURAMENTO — layout atual confirmado via debug:
+// [0]JANELA  [1]CONSTRUÇÃO  [2]PARCIAL  [3]MANUTENÇÃO PREVENTIVA
+// [4]MANUTENÇÃO PESADA  [5]MANUTENÇÃO LINHA VIVA  [6]MEDIÇÃO GRÁFICA  [7]TOTAL
 function normalizeMeta(row) {
   const janela = parseDate(row[0], 'META.janela')
   if (!janela) return null
   return {
     janela,
-    metaManutencaoPreventiva: parseBRL(row[1]),
-    metaConstrucao:           parseBRL(row[2]),
-    metaTotal:                parseBRL(row[3]),
+    metaConstrucao:           parseBRL(row[1]),
+    metaParcial:              parseBRL(row[2]),
+    metaManutencaoPreventiva: parseBRL(row[3]),
+    metaManutencaoPesada:     parseBRL(row[4]),
+    metaLinhaViva:            parseBRL(row[5]),
+    metaMedicaoGrafica:       parseBRL(row[6]),
+    metaTotal:                parseBRL(row[7]),  // TOTAL — coluna real do total geral
   }
 }
 
