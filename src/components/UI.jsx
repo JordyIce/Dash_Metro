@@ -416,7 +416,7 @@ export function ErrorState({ message, onRetry }) {
 }
 
 // ── SLA Farol ─────────────────────────────────────────────────────────────────
-export function SLAFarol({ label, value, thresholds = [7, 15], count }) {
+export function SLAFarol({ label, value, thresholds = [7, 15], count, subtitle }) {
   const status = value === null ? 'none' : value <= thresholds[0] ? 'ok' : value <= thresholds[1] ? 'warn' : 'crit'
   const S = {
     none: { dot: '#475569', text: '#94A3B8', badge: '#1C2340',               bdg: '#475569',               lbl: '—'       },
@@ -435,6 +435,9 @@ export function SLAFarol({ label, value, thresholds = [7, 15], count }) {
         </p>
         {count !== undefined && count > 0 && (
           <p style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>{count} registros com dados</p>
+        )}
+        {subtitle && (
+          <p style={{ fontSize: 10, color: '#334155', marginTop: 2 }}>{subtitle}</p>
         )}
       </div>
       <span style={{ fontSize: 10, fontWeight: 500, padding: '3px 8px', borderRadius: 20, background: S.badge, border: `1px solid ${S.bdg}`, color: S.text, whiteSpace: 'nowrap' }}>
