@@ -5,7 +5,7 @@ import {
   CartesianGrid, ReferenceLine, LabelList
 } from 'recharts'
 import { useData } from '../context/DataContext'
-import { applyFilters, fmtBRL, fmtDate, faturamentoPorJanela, acumuladoFaturamento, metaVsReal } from '../lib/metrics'
+import { applyFilters, fmtBRL, fmtDate, faturamentoPorJanela, acumuladoFaturamento, metaVsReal, groupByEstado } from '../lib/metrics'
 import { KPICard, ChartCard, PageHeader, LoadingState, ErrorState, CustomTooltip } from '../components/UI'
 
 const G = { display: 'grid', gap: 16 }
@@ -40,6 +40,8 @@ export default function Faturamento() {
   const lineData = useMemo(() =>
     fatJanela.map((f, i) => ({ ...f, acumulado: acum[i]?.acumulado ?? 0 }))
   , [fatJanela, acum])
+
+  const porEstado = useMemo(() => groupByEstado(execs), [execs])
 
   const lastN = fatJanela.slice(-2)
   const trend = lastN.length === 2 && lastN[0].valorPago > 0
@@ -156,6 +158,70 @@ export default function Faturamento() {
             {mvr.length === 0 && <p style={{textAlign:'center',color:'#94A3B8',padding:32}}>Sem dados</p>}
           </div>
         </ChartCard>
+
+
+        {/* Estado — gráfico de barras + tabela */}
+        <div style={{ ...G, gridTemplateColumns: '1fr 1fr' }}>
+          <ChartCard title="Apontado por Estado" subtitle="Valor apontado × qtd obras por estado">
+            {porEstado.length > 0 ? (
+              <ResponsiveContainer width="100%" height={Math.max(200, porEstado.length * 40)}>
+                <ComposedChart data={porEstado} layout="vertical" margin={{top:0,right:8,left:0,bottom:0}}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1C2340" horizontal={false}/>
+                  <XAxis type="number" tickFormatter={v => v >= 1e6 ? `${(v/1e6).toFixed(1)}M` : `${(v/1e3).toFixed(0)}k`} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
+                  <YAxis type="category" dataKey="estado" width={110} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
+                  <Tooltip content={<CustomTooltip/>}/>
+                  <Bar dataKey="valorApontado" name="Valor Apontado" fill="#6366F1" radius={[0,4,4,0]}>
+                    <LabelList
+                      dataKey="valorApontado"
+                      content={({ x, y, width, height, value }) => {
+                        if (!value) return null
+                        const label = value >= 1e6 ? `${(value/1e6).toFixed(1)}M` : `${(value/1e3).toFixed(0)}k`
+                        const inside = width > 60
+                        return (
+                          <text x={inside ? x+width-6 : x+width+5} y={y+height/2+4}
+                            fill={inside ? '#fff' : '#94A3B8'} textAnchor={inside ? 'end' : 'start'}
+                            fontSize={10} fontFamily="'IBM Plex Mono',monospace" fontWeight={inside ? 600 : 400}>
+                            {label}
+                          </text>
+                        )
+                      }}
+                    />
+                  </Bar>
+                </ComposedChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{height:200,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <p style={{color:'#475569',fontSize:12}}>Sem dados</p>
+              </div>
+            )}
+          </ChartCard>
+
+          <ChartCard title="Detalhe por Estado">
+            <div style={{overflowX:'auto'}}>
+              <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
+                <thead>
+                  <tr style={{color:'#94A3B8',fontSize:10,textTransform:'uppercase',letterSpacing:'.05em',borderBottom:'1px solid #1C2340'}}>
+                    <th style={{textAlign:'left', padding:'8px 12px 8px 0',fontWeight:500}}>Estado</th>
+                    <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>Qtd Obras</th>
+                    <th style={{textAlign:'right',padding:'8px 0 8px 12px',fontWeight:500}}>Valor Apontado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {porEstado.map(e => (
+                    <tr key={e.estado} style={{borderTop:'1px solid rgba(28,35,64,.6)'}}>
+                      <td style={{padding:'9px 12px 9px 0',color:'#fff',fontWeight:500}}>{e.estado}</td>
+                      <td style={{padding:'9px 12px',textAlign:'right',fontFamily:"'IBM Plex Mono',monospace",color:'#94A3B8'}}>{e.qtdObras}</td>
+                      <td style={{padding:'9px 0 9px 12px',textAlign:'right',fontFamily:"'IBM Plex Mono',monospace",color:'#6366F1',fontWeight:600}}>{fmtBRL(e.valorApontado)}</td>
+                    </tr>
+                  ))}
+                  {porEstado.length === 0 && (
+                    <tr><td colSpan={3} style={{padding:24,textAlign:'center',color:'#475569'}}>Sem dados</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </ChartCard>
+        </div>
 
       </div>
     </div>
