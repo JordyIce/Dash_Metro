@@ -64,7 +64,8 @@ export default function Faturamento() {
           <KPICard label="Qtd. Obras" value={new Set(execs.map(e => e.idExecucao)).size.toLocaleString('pt-BR')} accent="muted"/>
         </div>
 
-        <ChartCard title="Evolução do Faturamento" subtitle="Valor pago por janela + curva acumulada">
+        {/* Janela de Envio × Apontado + curva acumulada */}
+        <ChartCard title="Evolução do Faturamento" subtitle="Valor apontado por janela de envio + curva acumulada">
           <ResponsiveContainer width="100%" height={320}>
             <ComposedChart data={lineData} margin={{top:28,right:20,left:0,bottom:0}}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1C2340" vertical={false}/>
@@ -72,7 +73,7 @@ export default function Faturamento() {
               <YAxis yAxisId="bar"  tickFormatter={v=>`${(v/1e6).toFixed(1)}M`} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
               <YAxis yAxisId="line" orientation="right" tickFormatter={v=>`${(v/1e6).toFixed(1)}M`} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
               <Tooltip content={<CustomTooltip/>}/>
-              <Bar yAxisId="bar" dataKey="valorPago" name="Valor Pago" fill="#F59E0B" radius={[4,4,0,0]} opacity={0.85}>
+              <Bar yAxisId="bar" dataKey="valorApontado" name="Valor Apontado" fill="#F59E0B" radius={[4,4,0,0]} opacity={0.85}>
                 <LabelList content={<BarLabel/>} />
               </Bar>
               <Line yAxisId="line" dataKey="acumulado" name="Acumulado" stroke="#6366F1" strokeWidth={2} dot={{fill:'#6366F1',r:3}}/>
