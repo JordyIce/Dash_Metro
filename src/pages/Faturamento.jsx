@@ -160,8 +160,8 @@ export default function Faturamento() {
         </ChartCard>
 
 
-        {/* Estado — tabela */}
-        <div>
+        {/* Estado — tabela meia largura */}
+        <div style={{ ...G, gridTemplateColumns: '1fr 1fr' }}>
           <ChartCard title="Detalhe por Estado">
             <div style={{overflowX:'auto'}}>
               <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
