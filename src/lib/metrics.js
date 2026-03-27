@@ -197,7 +197,7 @@ export function metaVsReal(data, metas, tiposFiltro = []) {
   return fat.map(f => {
     const metaObj = metaMap.get(f.janela)
     const meta    = metaParaTipos(metaObj, tiposFiltro)
-    return { label: f.label, janela: f.janela, real: f.valorPago, meta, pct: meta > 0 ? (f.valorPago / meta) * 100 : 0 }
+    return { label: f.label, janela: f.janela, real: f.valorPago, apontado: f.valorApontado, meta, pct: meta > 0 ? (f.valorPago / meta) * 100 : 0, pctApontado: meta > 0 ? (f.valorApontado / meta) * 100 : 0 }
   })
 }
 
