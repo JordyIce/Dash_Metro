@@ -151,8 +151,8 @@ export default function Executivo() {
           />
         </div>
 
-        {/* Row 1 */}
-        <div style={{ ...G, gridTemplateColumns: '2fr 1fr' }}>
+        {/* Row 1 — largura total */}
+        <div>
           <ChartCard title="Faturamento por Janela de Pagamento" subtitle="Valor pago por mês">
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={fatPagamento} margin={{top:24,right:8,left:0,bottom:0}}>
@@ -163,22 +163,6 @@ export default function Executivo() {
                   <LabelList content={<BarLabel currency />} />
                 </Bar>
               </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
-          <ChartCard title="Status de Pagamento" subtitle="Distribuição por valor">
-            <ResponsiveContainer width="100%" height={260}>
-              <PieChart>
-                <Pie
-                  data={statusBkdn} dataKey="valor" nameKey="status"
-                  cx="50%" cy="50%" innerRadius={55} outerRadius={90} strokeWidth={0}
-                  labelLine={false} label={<PieLabel/>}
-                >
-                  {statusBkdn.map((s,i) => <Cell key={s.status} fill={STATUS_COLORS[s.status] ?? CHART_PALETTE[i%CHART_PALETTE.length]}/>)}
-                </Pie>
-                <Tooltip content={<CustomTooltip/>}/>
-                <Legend formatter={v=><span style={{fontSize:10,color:'#94A3B8'}}>{v}</span>} iconType="circle" iconSize={7}/>
-              </PieChart>
             </ResponsiveContainer>
           </ChartCard>
         </div>
@@ -211,8 +195,12 @@ export default function Executivo() {
             </ResponsiveContainer>
           </ChartCard>
 
+        </div>
+
+        {/* Row 3 — Top Municípios (2fr) + Status de Pagamento (1fr) */}
+        <div style={{ ...G, gridTemplateColumns: '2fr 1fr' }}>
           <ChartCard title="Top Municípios" subtitle="Por valor pago">
-            <ResponsiveContainer width="100%" height={240}>
+            <ResponsiveContainer width="100%" height={280}>
               <BarChart data={topMuni} layout="vertical" margin={{top:0,right:8,left:0,bottom:0}}>
                 <XAxis type="number" tickFormatter={v=>`${(v/1e3).toFixed(0)}k`} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
                 <YAxis type="category" dataKey="municipio" width={200} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
@@ -224,9 +212,25 @@ export default function Executivo() {
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
+
+          <ChartCard title="Status de Pagamento" subtitle="Distribuição por valor">
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={statusBkdn} dataKey="valor" nameKey="status"
+                  cx="50%" cy="45%" innerRadius={60} outerRadius={95} strokeWidth={0}
+                  labelLine={false} label={<PieLabel/>}
+                >
+                  {statusBkdn.map((s,i) => <Cell key={s.status} fill={STATUS_COLORS[s.status] ?? CHART_PALETTE[i%CHART_PALETTE.length]}/>)}
+                </Pie>
+                <Tooltip content={<CustomTooltip/>}/>
+                <Legend formatter={v=><span style={{fontSize:10,color:'#94A3B8'}}>{v}</span>} iconType="circle" iconSize={7}/>
+              </PieChart>
+            </ResponsiveContainer>
+          </ChartCard>
         </div>
 
-        {/* Row 3 */}
+        {/* Row 4 */}
         <div style={{ ...G, gridTemplateColumns: '1fr 1fr' }}>
           <ChartCard title="Distribuição por Tipo" subtitle="Valor pago">
             <ResponsiveContainer width="100%" height={220}>
