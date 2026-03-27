@@ -5,6 +5,7 @@ const Ctx = createContext(null)
 const EMPTY = {
   tipoExecucao:    [],
   statusPagamento: [],
+  estado:          [],   // coluna ESTADO (workflowStatus): COM UV, VALIDADO, etc.
   dateFrom:        '',   // janela de envio — de
   dateTo:          '',   // janela de envio — até
   payFrom:         '',   // janela de pagamento — de
