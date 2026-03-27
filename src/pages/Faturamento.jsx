@@ -160,42 +160,8 @@ export default function Faturamento() {
         </ChartCard>
 
 
-        {/* Estado — gráfico de barras + tabela */}
-        <div style={{ ...G, gridTemplateColumns: '1fr 1fr' }}>
-          <ChartCard title="Apontado por Estado" subtitle="Valor apontado × qtd obras por estado">
-            {porEstado.length > 0 ? (
-              <ResponsiveContainer width="100%" height={Math.max(200, porEstado.length * 40)}>
-                <ComposedChart data={porEstado} layout="vertical" margin={{top:0,right:8,left:0,bottom:0}}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1C2340" horizontal={false}/>
-                  <XAxis type="number" tickFormatter={v => v >= 1e6 ? `${(v/1e6).toFixed(1)}M` : `${(v/1e3).toFixed(0)}k`} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
-                  <YAxis type="category" dataKey="estado" width={110} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
-                  <Tooltip content={<CustomTooltip/>}/>
-                  <Bar dataKey="valorApontado" name="Valor Apontado" fill="#6366F1" radius={[0,4,4,0]}>
-                    <LabelList
-                      dataKey="valorApontado"
-                      content={({ x, y, width, height, value }) => {
-                        if (!value) return null
-                        const label = value >= 1e6 ? `${(value/1e6).toFixed(1)}M` : `${(value/1e3).toFixed(0)}k`
-                        const inside = width > 60
-                        return (
-                          <text x={inside ? x+width-6 : x+width+5} y={y+height/2+4}
-                            fill={inside ? '#fff' : '#94A3B8'} textAnchor={inside ? 'end' : 'start'}
-                            fontSize={10} fontFamily="'IBM Plex Mono',monospace" fontWeight={inside ? 600 : 400}>
-                            {label}
-                          </text>
-                        )
-                      }}
-                    />
-                  </Bar>
-                </ComposedChart>
-              </ResponsiveContainer>
-            ) : (
-              <div style={{height:200,display:'flex',alignItems:'center',justifyContent:'center'}}>
-                <p style={{color:'#475569',fontSize:12}}>Sem dados</p>
-              </div>
-            )}
-          </ChartCard>
-
+        {/* Estado — tabela */}
+        <div>
           <ChartCard title="Detalhe por Estado">
             <div style={{overflowX:'auto'}}>
               <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
