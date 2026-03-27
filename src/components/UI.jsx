@@ -294,12 +294,14 @@ export function FilterBar() {
   const { data, filters, setFilter, clearFilters } = useData()
   if (!data) return null
 
-  const ex     = data.execucoes
-  const tipos  = [...new Set(ex.map(e => e.tipoExecucao))].filter(Boolean).sort()
-  const status = [...new Set(ex.map(e => e.statusPagamento))].filter(Boolean).sort()
+  const ex      = data.execucoes
+  const tipos   = [...new Set(ex.map(e => e.tipoExecucao))].filter(Boolean).sort()
+  const status  = [...new Set(ex.map(e => e.statusPagamento))].filter(Boolean).sort()
+  const estados = [...new Set(ex.map(e => e.workflowStatus))].filter(Boolean).sort()
 
   const hasActive = filters.tipoExecucao.length > 0 ||
                     filters.statusPagamento.length > 0 ||
+                    filters.estado.length > 0 ||
                     filters.dateFrom || filters.dateTo ||
                     filters.payFrom  || filters.payTo
 
@@ -332,6 +334,12 @@ export function FilterBar() {
         options={status}
         selected={filters.statusPagamento}
         onChange={v => setFilter('statusPagamento', v)}
+      />
+      <MultiSelect
+        label="Estado"
+        options={estados}
+        selected={filters.estado}
+        onChange={v => setFilter('estado', v)}
       />
 
       {divider}
