@@ -167,34 +167,20 @@ export default function Executivo() {
           </ChartCard>
         </div>
 
-        {/* Row 2 */}
-        <div style={{ ...G, gridTemplateColumns: '1fr 1fr' }}>
-          <ChartCard title="Janela de Envio × Valor Pago" subtitle="Valor pago por janela de envio">
+        {/* Row 2 — largura total */}
+        <div>
+          <ChartCard title="Janela de Envio × Valor Apontado" subtitle="Valor apontado por janela de envio">
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={fatEnvio} margin={{top:24,right:8,left:0,bottom:0}}>
                 <XAxis dataKey="label" tick={{fill:'#94A3B8',fontSize:11}} axisLine={false} tickLine={false}/>
                 <YAxis tickFormatter={v=>`${(v/1e6).toFixed(1)}M`} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
                 <Tooltip content={<CustomTooltip/>}/>
-                <Bar dataKey="valorPago" name="Valor Pago" fill="#6366F1" radius={[4,4,0,0]}>
+                <Bar dataKey="valorApontado" name="Valor Apontado" fill="#6366F1" radius={[4,4,0,0]}>
                   <LabelList content={<BarLabel currency />} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
-
-          <ChartCard title="Janela de Pagamento × Valor Pago" subtitle="Valor pago por janela de pagamento">
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={fatPagamento} margin={{top:24,right:8,left:0,bottom:0}}>
-                <XAxis dataKey="label" tick={{fill:'#94A3B8',fontSize:11}} axisLine={false} tickLine={false}/>
-                <YAxis tickFormatter={v=>`${(v/1e6).toFixed(1)}M`} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
-                <Tooltip content={<CustomTooltip/>}/>
-                <Bar dataKey="valorPago" name="Valor Pago" fill="#10B981" radius={[4,4,0,0]}>
-                  <LabelList content={<BarLabel currency />} />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
         </div>
 
         {/* Row 3 — Top Municípios (2fr) + Status de Pagamento (1fr) */}
