@@ -59,7 +59,8 @@ export function applyFilters(data, filters) {
 
 // ── Agregações ────────────────────────────────────────────────────────────────
 export function groupByEstado(data) {
-  const map = new Map()
+  const map      = new Map()
+  const janelaMap = new Map() // estado → { janela → valorPago }
   for (const e of data) {
     const k   = e.workflowStatus || 'N/A'
     const cur = map.get(k) ?? { qtdObras: 0, valorApontado: 0, valorPago: 0 }
@@ -67,9 +68,23 @@ export function groupByEstado(data) {
     cur.valorApontado += e.valorApontado
     cur.valorPago     += e.valorPago
     map.set(k, cur)
+    // rastrear melhor janela de envio por estado
+    if (e.janelaEnvio) {
+      if (!janelaMap.has(k)) janelaMap.set(k, new Map())
+      const jm = janelaMap.get(k)
+      jm.set(e.janelaEnvio, (jm.get(e.janelaEnvio) ?? 0) + e.valorPago)
+    }
   }
   return [...map.entries()]
-    .map(([estado, v]) => ({ estado, ...v }))
+    .map(([estado, v]) => {
+      const jm = janelaMap.get(estado)
+      let melhorJanela = null
+      if (jm) {
+        const best = [...jm.entries()].sort((a, b) => b[1] - a[1])[0]
+        melhorJanela = best ? best[0] : null
+      }
+      return { estado, ...v, melhorJanela }
+    })
     .sort((a, b) => b.valorApontado - a.valorApontado)
 }
 
