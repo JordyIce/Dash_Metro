@@ -103,7 +103,8 @@ export default function Executivo() {
 
   const pctMeta = metaFiltrada > 0 ? (totalPago / metaFiltrada) * 100 : null
 
-  const fatJanela  = useMemo(() => faturamentoPorJanelaPagamento(execs).slice(-12), [execs])
+  const fatPagamento = useMemo(() => faturamentoPorJanelaPagamento(execs).slice(-12), [execs])
+  const fatEnvio     = useMemo(() => faturamentoPorJanela(execs).slice(-12),           [execs])
   const statusBkdn = useMemo(() => statusBreakdown(execs), [execs])
   const topMuni    = useMemo(() => topMunicipios(execs, 8), [execs])
   const mvr        = useMemo(() => data ? metaVsReal(execs, data.metas, filters.tipoExecucao).slice(-6) : [], [execs, data, filters.tipoExecucao])
@@ -144,7 +145,7 @@ export default function Executivo() {
         <div style={{ ...G, gridTemplateColumns: '2fr 1fr' }}>
           <ChartCard title="Faturamento por Janela de Pagamento" subtitle="Valor pago por mês">
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={fatJanela} margin={{top:24,right:8,left:0,bottom:0}}>
+              <BarChart data={fatPagamento} margin={{top:24,right:8,left:0,bottom:0}}>
                 <XAxis dataKey="label" tick={{fill:'#94A3B8',fontSize:11}} axisLine={false} tickLine={false}/>
                 <YAxis tickFormatter={v=>`${(v/1e6).toFixed(1)}M`} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
                 <Tooltip content={<CustomTooltip/>}/>
@@ -174,16 +175,26 @@ export default function Executivo() {
 
         {/* Row 2 */}
         <div style={{ ...G, gridTemplateColumns: '1fr 1fr' }}>
-          <ChartCard title="Faturamento vs Meta" subtitle="Últimos 6 meses">
+          <ChartCard title="Janela de Envio × Valor Pago" subtitle="Valor pago por janela de envio">
             <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={mvr} margin={{top:24,right:8,left:0,bottom:0}}>
+              <BarChart data={fatEnvio} margin={{top:24,right:8,left:0,bottom:0}}>
                 <XAxis dataKey="label" tick={{fill:'#94A3B8',fontSize:11}} axisLine={false} tickLine={false}/>
                 <YAxis tickFormatter={v=>`${(v/1e6).toFixed(1)}M`} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
                 <Tooltip content={<CustomTooltip/>}/>
-                <Bar dataKey="real" name="Realizado" fill="#10B981" radius={[4,4,0,0]}>
+                <Bar dataKey="valorPago" name="Valor Pago" fill="#6366F1" radius={[4,4,0,0]}>
                   <LabelList content={<BarLabel currency />} />
                 </Bar>
-                <Bar dataKey="meta" name="Meta" fill="#1C2340" radius={[4,4,0,0]}>
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          <ChartCard title="Janela de Pagamento × Valor Pago" subtitle="Valor pago por janela de pagamento">
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={fatPagamento} margin={{top:24,right:8,left:0,bottom:0}}>
+                <XAxis dataKey="label" tick={{fill:'#94A3B8',fontSize:11}} axisLine={false} tickLine={false}/>
+                <YAxis tickFormatter={v=>`${(v/1e6).toFixed(1)}M`} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
+                <Tooltip content={<CustomTooltip/>}/>
+                <Bar dataKey="valorPago" name="Valor Pago" fill="#10B981" radius={[4,4,0,0]}>
                   <LabelList content={<BarLabel currency />} />
                 </Bar>
               </BarChart>
