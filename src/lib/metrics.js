@@ -206,9 +206,10 @@ export function statusBreakdown(data) {
   const map = new Map()
   for (const e of data) {
     const s   = e.statusPagamento || 'SEM STATUS'
-    const cur = map.get(s) ?? { qtd: 0, valor: 0 }
-    cur.qtd   += 1
-    cur.valor += e.valorPago
+    const cur = map.get(s) ?? { qtd: 0, valor: 0, valorApontado: 0 }
+    cur.qtd           += 1
+    cur.valor         += e.valorPago
+    cur.valorApontado += e.valorApontado
     map.set(s, cur)
   }
   return [...map.entries()].map(([status, v]) => ({ status, ...v })).sort((a, b) => b.valor - a.valor)
@@ -218,11 +219,11 @@ export function statusBreakdown(data) {
 export function topMunicipios(data, n = 10) {
   const map = new Map()
   for (const e of data) {
-    const m   = e.municipio || 'N/A'
-    const cur = map.get(m) ?? { qtd: 0, valor: 0 }
+    if (!e.municipio) continue   // ignora registros sem município
+    const cur = map.get(e.municipio) ?? { qtd: 0, valor: 0 }
     cur.qtd   += 1
     cur.valor += e.valorPago
-    map.set(m, cur)
+    map.set(e.municipio, cur)
   }
   return [...map.entries()]
     .map(([municipio, v]) => ({ municipio, ...v }))
