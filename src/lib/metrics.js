@@ -136,6 +136,20 @@ export function faturamentoPorJanela(data) {
     .map(([janela, v]) => ({ janela, label: fmtDate(janela), ...v }))
 }
 
+export function faturamentoPorJanelaPagamento(data) {
+  const map = new Map()
+  for (const e of data) {
+    if (!e.janelaPagamento) continue
+    const cur = map.get(e.janelaPagamento) ?? { valorPago: 0, valorApontado: 0 }
+    cur.valorPago     += e.valorPago
+    cur.valorApontado += e.valorApontado
+    map.set(e.janelaPagamento, cur)
+  }
+  return [...map.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([janela, v]) => ({ janela, label: fmtDate(janela), ...v }))
+}
+
 export function acumuladoFaturamento(data) {
   const fat = faturamentoPorJanela(data)
   let acc = 0
