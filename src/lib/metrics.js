@@ -63,8 +63,9 @@ export function groupByEstado(data) {
   const janelaMap = new Map() // estado → { janela → valorPago }
   for (const e of data) {
     const k   = e.workflowStatus || 'N/A'
-    const cur = map.get(k) ?? { qtdObras: 0, valorApontado: 0, valorPago: 0 }
+    const cur = map.get(k) ?? { qtdObras: 0, valorOrcado: 0, valorApontado: 0, valorPago: 0 }
     cur.qtdObras      += 1
+    cur.valorOrcado   += e.valorOrcado
     cur.valorApontado += e.valorApontado
     cur.valorPago     += e.valorPago
     map.set(k, cur)
