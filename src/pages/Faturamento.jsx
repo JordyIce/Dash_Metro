@@ -112,21 +112,35 @@ export default function Faturamento() {
                 <tr style={{color:'#94A3B8',fontSize:10,textTransform:'uppercase',letterSpacing:'.05em'}}>
                   <th style={{textAlign:'left', padding:'8px 12px 8px 0',fontWeight:500}}>Janela</th>
                   <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>Apontado</th>
+                  <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>vs mês ant.</th>
                   <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>Pago</th>
                   <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>Meta</th>
-                  <th style={{textAlign:'right',padding:'8px 0 8px 12px',fontWeight:500}}>% Apontado</th>
+                  <th style={{textAlign:'right',padding:'8px 0 8px 12px',fontWeight:500}}>% Meta</th>
                 </tr>
               </thead>
               <tbody>
-                {mvr.map(r => {
-                  const fat = fatJanela.find(f => f.janela === r.janela)
-                  const pct = r.pctApontado ?? 0
-                  const Icon = pct >= 100 ? TrendingUp : pct >= 70 ? Minus : TrendingDown
-                  const color = pct >= 100 ? '#10B981' : pct >= 70 ? '#F59E0B' : '#F43F5E'
+                {mvr.map((r, i) => {
+                  const fat     = fatJanela.find(f => f.janela === r.janela)
+                  const fatPrev = i > 0 ? fatJanela.find(f => f.janela === mvr[i-1].janela) : null
+                  const apont      = fat?.valorApontado ?? 0
+                  const apontPrev  = fatPrev?.valorApontado ?? 0
+                  const deltaPct   = apontPrev > 0 ? ((apont - apontPrev) / apontPrev) * 100 : null
+                  const pct     = r.pctApontado ?? 0
+                  const Icon    = pct >= 100 ? TrendingUp : pct >= 70 ? Minus : TrendingDown
+                  const color   = pct >= 100 ? '#10B981' : pct >= 70 ? '#F59E0B' : '#F43F5E'
+                  const DeltaIcon = deltaPct === null ? null : deltaPct >= 0 ? TrendingUp : TrendingDown
+                  const deltaColor = deltaPct === null ? '#475569' : deltaPct >= 0 ? '#10B981' : '#F43F5E'
                   return (
                     <tr key={r.janela} style={{borderTop:'1px solid rgba(28,35,64,.6)'}}>
                       <td style={{padding:'10px 12px 10px 0',fontWeight:500,color:'#fff'}}>{r.label}</td>
-                      <td style={{padding:'10px 12px',textAlign:'right',fontFamily:"'IBM Plex Mono',monospace",color:'#94A3B8'}}>{fmtBRL(fat?.valorApontado??0)}</td>
+                      <td style={{padding:'10px 12px',textAlign:'right',fontFamily:"'IBM Plex Mono',monospace",color:'#94A3B8'}}>{fmtBRL(apont)}</td>
+                      <td style={{padding:'10px 12px',textAlign:'right'}}>
+                        {deltaPct !== null
+                          ? <span style={{display:'flex',alignItems:'center',justifyContent:'flex-end',gap:3,fontFamily:"'IBM Plex Mono',monospace",fontSize:11,fontWeight:600,color:deltaColor}}>
+                              <DeltaIcon size={10}/> {deltaPct >= 0 ? '+' : ''}{deltaPct.toFixed(1)}%
+                            </span>
+                          : <span style={{color:'#334155',fontSize:11}}>—</span>}
+                      </td>
                       <td style={{padding:'10px 12px',textAlign:'right',fontFamily:"'IBM Plex Mono',monospace",color:'#fff',fontWeight:600}}>{fmtBRL(r.real)}</td>
                       <td style={{padding:'10px 12px',textAlign:'right',fontFamily:"'IBM Plex Mono',monospace",color:'#475569'}}>{fmtBRL(r.meta)}</td>
                       <td style={{padding:'10px 0 10px 12px',textAlign:'right'}}>
