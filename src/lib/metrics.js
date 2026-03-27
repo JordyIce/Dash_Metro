@@ -32,6 +32,7 @@ export function applyFilters(data, filters) {
   return data.filter(e => {
     if (filters.tipoExecucao?.length    && !filters.tipoExecucao.includes(e.tipoExecucao))      return false
     if (filters.statusPagamento?.length && !filters.statusPagamento.includes(e.statusPagamento)) return false
+    if (filters.estado?.length          && !filters.estado.includes(e.workflowStatus))           return false
 
     // Filtro por janela de envio (dateFrom / dateTo)
     // Registros sem janelaEnvio usam dataApontamento como fallback.
@@ -57,6 +58,21 @@ export function applyFilters(data, filters) {
 }
 
 // ── Agregações ────────────────────────────────────────────────────────────────
+export function groupByEstado(data) {
+  const map = new Map()
+  for (const e of data) {
+    const k   = e.workflowStatus || 'N/A'
+    const cur = map.get(k) ?? { qtdObras: 0, valorApontado: 0, valorPago: 0 }
+    cur.qtdObras      += 1
+    cur.valorApontado += e.valorApontado
+    cur.valorPago     += e.valorPago
+    map.set(k, cur)
+  }
+  return [...map.entries()]
+    .map(([estado, v]) => ({ estado, ...v }))
+    .sort((a, b) => b.valorApontado - a.valorApontado)
+}
+
 export function sumField(data, field) {
   return data.reduce((acc, e) => acc + (e[field] ?? 0), 0)
 }
