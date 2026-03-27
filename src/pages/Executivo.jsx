@@ -247,12 +247,21 @@ export default function Executivo() {
 
           <ChartCard title="Resumo por Status">
             <div>
+              {/* Legenda de colunas */}
+              <div style={{display:'flex',alignItems:'center',gap:10,padding:'0 0 8px 0',borderBottom:'1px solid #1C2340',marginBottom:2}}>
+                <div style={{width:8,flexShrink:0}}/>
+                <span style={{fontSize:10,color:'#475569',flex:1,textTransform:'uppercase',letterSpacing:'.06em'}}>Status</span>
+                <span style={{fontSize:10,color:'#475569',fontWeight:500,textTransform:'uppercase',letterSpacing:'.06em',minWidth:24,textAlign:'right'}}>Qtd</span>
+                <span style={{fontSize:10,color:'#6366F1',fontWeight:500,textTransform:'uppercase',letterSpacing:'.06em',minWidth:160,textAlign:'right'}}>Apontado</span>
+                <span style={{fontSize:10,color:'#10B981',fontWeight:500,textTransform:'uppercase',letterSpacing:'.06em',minWidth:160,textAlign:'right'}}>Pago</span>
+              </div>
               {statusBkdn.map(s => (
-                <div key={s.status} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderBottom:'1px solid rgba(28,35,64,.6)'}}>
+                <div key={s.status} style={{display:'flex',alignItems:'center',gap:10,padding:'9px 0',borderBottom:'1px solid rgba(28,35,64,.6)'}}>
                   <div style={{width:8,height:8,borderRadius:'50%',background:STATUS_COLORS[s.status]??'#94A3B8',flexShrink:0}}/>
                   <span style={{fontSize:12,color:'#94A3B8',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s.status||'—'}</span>
-                  <span style={{fontSize:11,color:'#475569',fontFamily:"'IBM Plex Mono',monospace"}}>{s.qtd}x</span>
-                  <span style={{fontSize:12,fontWeight:600,color:'#fff',fontFamily:"'IBM Plex Mono',monospace"}}>{fmtBRL(s.valor)}</span>
+                  <span style={{fontSize:11,color:'#475569',fontFamily:"'IBM Plex Mono',monospace",minWidth:24,textAlign:'right'}}>{s.qtd}x</span>
+                  <span style={{fontSize:12,fontWeight:500,color:'#6366F1',fontFamily:"'IBM Plex Mono',monospace",minWidth:160,textAlign:'right'}}>{fmtBRL(s.valorApontado)}</span>
+                  <span style={{fontSize:12,fontWeight:600,color:'#10B981',fontFamily:"'IBM Plex Mono',monospace",minWidth:160,textAlign:'right'}}>{fmtBRL(s.valor)}</span>
                 </div>
               ))}
             </div>
