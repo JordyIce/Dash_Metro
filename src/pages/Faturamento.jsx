@@ -160,34 +160,46 @@ export default function Faturamento() {
         </ChartCard>
 
 
-        {/* Estado — tabela meia largura */}
-        <div style={{ ...G, gridTemplateColumns: '1fr 1fr' }}>
-          <ChartCard title="Detalhe por Estado">
-            <div style={{overflowX:'auto'}}>
-              <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
-                <thead>
-                  <tr style={{color:'#94A3B8',fontSize:10,textTransform:'uppercase',letterSpacing:'.05em',borderBottom:'1px solid #1C2340'}}>
-                    <th style={{textAlign:'left', padding:'8px 12px 8px 0',fontWeight:500}}>Estado</th>
-                    <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>Qtd Obras</th>
-                    <th style={{textAlign:'right',padding:'8px 0 8px 12px',fontWeight:500}}>Valor Apontado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {porEstado.map(e => (
+        {/* Matriz por Estado */}
+        <ChartCard title="Matriz por Estado" subtitle="Valor apontado, faturado e melhor janela por estado">
+          <div style={{overflowX:'auto'}}>
+            <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
+              <thead>
+                <tr style={{color:'#94A3B8',fontSize:10,textTransform:'uppercase',letterSpacing:'.05em',borderBottom:'1px solid #1C2340'}}>
+                  <th style={{textAlign:'left', padding:'8px 12px 8px 0',fontWeight:500}}>Estado</th>
+                  <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>Qtd Obras</th>
+                  <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>Valor Apontado</th>
+                  <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>Valor Faturado</th>
+                  <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>Desvio Apt/Fat</th>
+                  <th style={{textAlign:'right',padding:'8px 0 8px 12px',fontWeight:500}}>Melhor Janela</th>
+                </tr>
+              </thead>
+              <tbody>
+                {porEstado.map(e => {
+                  const desvio = e.valorApontado > 0 ? ((e.valorPago - e.valorApontado) / e.valorApontado) * 100 : null
+                  const desvioColor = desvio === null ? '#475569' : desvio >= 0 ? '#10B981' : '#F43F5E'
+                  return (
                     <tr key={e.estado} style={{borderTop:'1px solid rgba(28,35,64,.6)'}}>
-                      <td style={{padding:'9px 12px 9px 0',color:'#fff',fontWeight:500}}>{e.estado}</td>
-                      <td style={{padding:'9px 12px',textAlign:'right',fontFamily:"'IBM Plex Mono',monospace",color:'#94A3B8'}}>{e.qtdObras}</td>
-                      <td style={{padding:'9px 0 9px 12px',textAlign:'right',fontFamily:"'IBM Plex Mono',monospace",color:'#6366F1',fontWeight:600}}>{fmtBRL(e.valorApontado)}</td>
+                      <td style={{padding:'10px 12px 10px 0',color:'#fff',fontWeight:500}}>{e.estado}</td>
+                      <td style={{padding:'10px 12px',textAlign:'right',fontFamily:"'IBM Plex Mono',monospace",color:'#94A3B8'}}>{e.qtdObras}</td>
+                      <td style={{padding:'10px 12px',textAlign:'right',fontFamily:"'IBM Plex Mono',monospace",color:'#6366F1',fontWeight:600}}>{fmtBRL(e.valorApontado)}</td>
+                      <td style={{padding:'10px 12px',textAlign:'right',fontFamily:"'IBM Plex Mono',monospace",color:'#10B981',fontWeight:600}}>{fmtBRL(e.valorPago)}</td>
+                      <td style={{padding:'10px 12px',textAlign:'right',fontFamily:"'IBM Plex Mono',monospace",color:desvioColor,fontWeight:500}}>
+                        {desvio !== null ? `${desvio >= 0 ? '+' : ''}${desvio.toFixed(1)}%` : '—'}
+                      </td>
+                      <td style={{padding:'10px 0 10px 12px',textAlign:'right',fontFamily:"'IBM Plex Mono',monospace",color:'#F59E0B'}}>
+                        {e.melhorJanela ? fmtDate(e.melhorJanela) : '—'}
+                      </td>
                     </tr>
-                  ))}
-                  {porEstado.length === 0 && (
-                    <tr><td colSpan={3} style={{padding:24,textAlign:'center',color:'#475569'}}>Sem dados</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </ChartCard>
-        </div>
+                  )
+                })}
+                {porEstado.length === 0 && (
+                  <tr><td colSpan={6} style={{padding:24,textAlign:'center',color:'#475569'}}>Sem dados</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </ChartCard>
 
       </div>
     </div>
