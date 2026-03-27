@@ -5,7 +5,7 @@ import {
   PieChart, Pie, Cell, Legend, LabelList
 } from 'recharts'
 import { useData } from '../context/DataContext'
-import { applyFilters, sumField, fmtBRL, faturamentoPorJanela, statusBreakdown, topMunicipios, metaVsReal, metaParaTipos, somarMetas } from '../lib/metrics'
+import { applyFilters, sumField, fmtBRL, faturamentoPorJanela, faturamentoPorJanelaPagamento, statusBreakdown, topMunicipios, metaVsReal, metaParaTipos, somarMetas } from '../lib/metrics'
 import { STATUS_COLORS, TIPO_COLORS, CHART_PALETTE } from '../lib/constants'
 import { KPICard, ChartCard, PageHeader, LoadingState, ErrorState, CustomTooltip } from '../components/UI'
 
@@ -103,7 +103,7 @@ export default function Executivo() {
 
   const pctMeta = metaFiltrada > 0 ? (totalPago / metaFiltrada) * 100 : null
 
-  const fatJanela  = useMemo(() => faturamentoPorJanela(execs).slice(-12), [execs])
+  const fatJanela  = useMemo(() => faturamentoPorJanelaPagamento(execs).slice(-12), [execs])
   const statusBkdn = useMemo(() => statusBreakdown(execs), [execs])
   const topMuni    = useMemo(() => topMunicipios(execs, 8), [execs])
   const mvr        = useMemo(() => data ? metaVsReal(execs, data.metas, filters.tipoExecucao).slice(-6) : [], [execs, data, filters.tipoExecucao])
@@ -142,7 +142,7 @@ export default function Executivo() {
 
         {/* Row 1 */}
         <div style={{ ...G, gridTemplateColumns: '2fr 1fr' }}>
-          <ChartCard title="Faturamento por Janela de Envio" subtitle="Valor pago por mês">
+          <ChartCard title="Faturamento por Janela de Pagamento" subtitle="Valor pago por mês">
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={fatJanela} margin={{top:24,right:8,left:0,bottom:0}}>
                 <XAxis dataKey="label" tick={{fill:'#94A3B8',fontSize:11}} axisLine={false} tickLine={false}/>
