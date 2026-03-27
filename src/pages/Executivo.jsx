@@ -28,8 +28,18 @@ function BarLabel({ x, y, width, value, currency = true }) {
 function HBarLabel({ x, y, width, height, value }) {
   if (!value || value === 0) return null
   const label = value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  // label dentro da barra, colado na borda direita — sem margem externa
+  const inside = width > 160
   return (
-    <text x={x + width + 6} y={y + height / 2 + 4} fill="#94A3B8" fontSize={10} fontFamily="'IBM Plex Mono', monospace">
+    <text
+      x={inside ? x + width - 8 : x + width + 6}
+      y={y + height / 2 + 4}
+      fill={inside ? '#080B18' : '#94A3B8'}
+      textAnchor={inside ? 'end' : 'start'}
+      fontSize={10}
+      fontFamily="'IBM Plex Mono', monospace"
+      fontWeight={inside ? 600 : 400}
+    >
       {label}
     </text>
   )
@@ -203,7 +213,7 @@ export default function Executivo() {
 
           <ChartCard title="Top Municípios" subtitle="Por valor pago">
             <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={topMuni} layout="vertical" margin={{top:0,right:180,left:0,bottom:0}}>
+              <BarChart data={topMuni} layout="vertical" margin={{top:0,right:8,left:0,bottom:0}}>
                 <XAxis type="number" tickFormatter={v=>`${(v/1e3).toFixed(0)}k`} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
                 <YAxis type="category" dataKey="municipio" width={200} tick={{fill:'#94A3B8',fontSize:10}} axisLine={false} tickLine={false}/>
                 <Tooltip content={<MunicipioTooltip/>}/>
