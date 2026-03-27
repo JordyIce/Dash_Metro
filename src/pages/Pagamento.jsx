@@ -30,7 +30,8 @@ function DesvioLabel({ x, y, width, value }) {
   )
 }
 
-function PieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }) {
+// Label de % dentro do Pie — baseado em qtd
+function PieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }) {
   if (percent < 0.04) return null
   const RADIAN = Math.PI / 180
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5
@@ -97,17 +98,18 @@ export default function Pagamento() {
         </div>
 
         <div style={{ ...G, gridTemplateColumns: '1fr 2fr' }}>
-          <ChartCard title="Distribuição por Status" subtitle="% do valor total">
+          {/* Pie agora usa qtd (nº de obras) em vez de valor */}
+          <ChartCard title="Distribuição por Status" subtitle="Qtd. de obras por status">
             <ResponsiveContainer width="100%" height={260}>
               <PieChart>
                 <Pie
-                  data={statusBkdn} dataKey="valor" nameKey="status"
+                  data={statusBkdn} dataKey="qtd" nameKey="status"
                   cx="50%" cy="50%" innerRadius={50} outerRadius={85} strokeWidth={0}
                   labelLine={false} label={<PieLabel/>}
                 >
                   {statusBkdn.map((s,i) => <Cell key={s.status} fill={STATUS_COLORS[s.status] ?? CHART_PALETTE[i%CHART_PALETTE.length]}/>)}
                 </Pie>
-                <Tooltip content={<CustomTooltip/>}/>
+                <Tooltip content={<CustomTooltip currency={false}/>}/>
                 <Legend formatter={v=><span style={{fontSize:10,color:'#94A3B8'}}>{v}</span>} iconType="circle" iconSize={7}/>
               </PieChart>
             </ResponsiveContainer>
