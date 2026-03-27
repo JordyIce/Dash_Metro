@@ -168,7 +168,6 @@ export default function Faturamento() {
                 <tr style={{color:'#94A3B8',fontSize:10,textTransform:'uppercase',letterSpacing:'.05em',borderBottom:'1px solid #1C2340'}}>
                   <th style={{textAlign:'left', padding:'8px 12px 8px 0',fontWeight:500}}>Estado</th>
                   <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>Qtd Obras</th>
-                  <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>Valor Orçado</th>
                   <th style={{textAlign:'right',padding:'8px 12px',fontWeight:500}}>Valor Apontado</th>
                   <th style={{textAlign:'right',padding:'8px 0 8px 12px',fontWeight:500}}>Valor Pago</th>
                 </tr>
@@ -178,13 +177,12 @@ export default function Faturamento() {
                   <tr key={e.estado} style={{borderTop:'1px solid rgba(28,35,64,.6)'}}>
                     <td style={{padding:'10px 12px 10px 0',color:'#fff',fontWeight:500}}>{e.estado}</td>
                     <td style={{padding:'10px 12px',textAlign:'right',fontFamily:"'IBM Plex Mono',monospace",color:'#94A3B8'}}>{e.qtdObras}</td>
-                    <td style={{padding:'10px 12px',textAlign:'right',fontFamily:"'IBM Plex Mono',monospace",color:'#475569'}}>{fmtBRL(e.valorOrcado)}</td>
                     <td style={{padding:'10px 12px',textAlign:'right',fontFamily:"'IBM Plex Mono',monospace",color:'#6366F1',fontWeight:600}}>{fmtBRL(e.valorApontado)}</td>
                     <td style={{padding:'10px 0 10px 12px',textAlign:'right',fontFamily:"'IBM Plex Mono',monospace",color:'#10B981',fontWeight:600}}>{fmtBRL(e.valorPago)}</td>
                   </tr>
                 ))}
                 {porEstado.length === 0 && (
-                  <tr><td colSpan={5} style={{padding:24,textAlign:'center',color:'#475569'}}>Sem dados</td></tr>
+                  <tr><td colSpan={4} style={{padding:24,textAlign:'center',color:'#475569'}}>Sem dados</td></tr>
                 )}
               </tbody>
             </table>
